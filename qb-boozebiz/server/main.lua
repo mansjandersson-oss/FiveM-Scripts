@@ -94,6 +94,16 @@ local function getFermentRoute(route)
     return Config.FermentationRoutes[route]
 end
 
+local function getDistillProfile(source, product, temp, time)
+    local sourceProfiles = Config.DistillProfiles[source]
+    if not sourceProfiles then return end
+
+    local profile = sourceProfiles[product]
+    if not profile then return end
+
+    if temp >= profile.temp.min and temp <= profile.temp.max
+        and time >= profile.time.min and time <= profile.time.max then
+        return profile
 local function getDistillProfile(source, temp, time)
     for _, profile in ipairs(Config.DistillProfiles) do
         if profile.source == source
@@ -211,11 +221,22 @@ RegisterNetEvent('qb-boozebiz:server:DistillMash', function(distillData)
     end
 
     local sourceMash = distillData.source
+    local productKey = distillData.product
     local temp = math.floor(tonumber(distillData.temp) or 0)
     local time = math.floor(tonumber(distillData.time) or 0)
 
     if sourceMash ~= 'beer' and sourceMash ~= 'wine' then
         notify(src, t('invalid_mash_source'), 'error')
+        return
+    end
+
+    if sourceMash == 'beer' and productKey ~= 'beer' and productKey ~= 'vodka' and productKey ~= 'gin' and productKey ~= 'whiskey' then
+        notify(src, t('invalid_distill_product'), 'error')
+        return
+    end
+
+    if sourceMash == 'wine' and productKey ~= 'wine' then
+        notify(src, t('invalid_distill_product'), 'error')
         return
     end
 
@@ -236,6 +257,14 @@ RegisterNetEvent('qb-boozebiz:server:DistillMash', function(distillData)
         return
     end
 
+    local profile = getDistillProfile(sourceMash, productKey, temp, time)
+    if not profile then
+        notify(src, t('distill_profile_fail'), 'error')
+        return
+    end
+
+    local alcoholType = profile.label
+    local purity = math.random(profile.purity.min, profile.purity.max)
     local profile = getDistillProfile(sourceMash, temp, time)
     local alcoholType = profile and profile.label or (sourceMash == 'beer' and 'Raw Grain Spirit' or 'Rustic Wine Spirit')
     local purity = profile and math.random(profile.purity.min, profile.purity.max) or math.random(70, 84)

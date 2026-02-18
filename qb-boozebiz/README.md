@@ -6,7 +6,7 @@ A full **QBCore farm-to-shelf booze manufacturing resource** designed for immers
 - Ingredient collection from multiple world locations (grapes, barley, water, yeast, bottles, cardboard).
 - Multi-stage production with dedicated mini-games:
   - Ferment mash route selection: grapes -> Wine Mash, barley -> Beer Mash
-  - Distill with temperature/time control (beer mash branches into different alcohol types)
+  - Distill with product selection + temperature/time profiles to produce Wine, Beer, Vodka, Gin, and Whiskey
   - Bottle liquor by timing your pour mini-game, then naming the bottle + setting purity
   - Pack crates carefully (failure can break bottles)
 - Stock multiple liquor stores for bank payouts (with stocking mini-game).
@@ -81,7 +81,8 @@ Tune all behavior in `config.lua`:
 - Bottles stack naturally when they share the exact same `bottleName` and `purity` metadata.
 - Every major interaction now includes a mini-game (`Config.Minigames`) to make progression more skill-based.
 - Fermentation route now determines mash output: **grape => Wine Mash**, **barley => Beer Mash**.
-- Distilling Beer Mash uses temp+time profiles to produce different spirits (e.g. Whiskey, Vodka, Gin).
+- Distillation supports product-targeted outputs: **Wine, Beer, Vodka, Gin, Whiskey**.
+- Temp/time must match the selected product profile to succeed.
 - If fermentation temperature is pushed too high, there is a configurable chance of a vat explosion that damages players within 5m.
 - Failing the packing mini-game can break bottled liquor from the player inventory.
 - You can add additional stores and production locations in `Config.StockZones` and `Config.ProcessingStations`.

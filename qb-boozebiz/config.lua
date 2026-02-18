@@ -38,6 +38,14 @@ Config.Items = {
     liquorCrate = 'liquor_crate'
 }
 
+Config.Products = {
+    wine = 'Wine',
+    beer = 'Beer',
+    vodka = 'Vodka',
+    gin = 'Gin',
+    whiskey = 'Whiskey'
+}
+
 Config.Minigames = {
     Harvest = {
         stages = { 'easy', 'easy' },
@@ -103,6 +111,43 @@ Config.FermentationRoutes = {
 }
 
 Config.DistillProfiles = {
+    beer = {
+        whiskey = {
+            label = Config.Products.whiskey,
+            temp = { min = 74, max = 83 },
+            time = { min = 60, max = 95 },
+            purity = { min = 82, max = 94 }
+        },
+        vodka = {
+            label = Config.Products.vodka,
+            temp = { min = 84, max = 96 },
+            time = { min = 45, max = 75 },
+            purity = { min = 88, max = 99 }
+        },
+        gin = {
+            label = Config.Products.gin,
+            temp = { min = 68, max = 78 },
+            time = { min = 80, max = 120 },
+            purity = { min = 75, max = 90 }
+        },
+        beer = {
+            label = Config.Products.beer,
+            temp = { min = 60, max = 72 },
+            time = { min = 25, max = 55 },
+            purity = { min = 70, max = 82 }
+        }
+    },
+    wine = {
+        wine = {
+            label = Config.Products.wine,
+            temp = { min = 65, max = 86 },
+            time = { min = 35, max = 90 },
+            purity = { min = 72, max = 88 }
+        }
+    }
+}
+
+
     {
         source = 'beer',
         label = 'Whiskey Spirit',

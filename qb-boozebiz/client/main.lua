@@ -130,6 +130,39 @@ local function runFermentMinigame()
     }
 end
 
+local function chooseDistillProduct(source)
+    local options
+
+    if source == 'beer' then
+        options = {
+            { label = t('product_beer'), value = 'beer' },
+            { label = t('product_vodka'), value = 'vodka' },
+            { label = t('product_gin'), value = 'gin' },
+            { label = t('product_whiskey'), value = 'whiskey' }
+        }
+    else
+        options = {
+            { label = t('product_wine'), value = 'wine' }
+        }
+    end
+
+    local input = lib.inputDialog(t('distill_product_title'), {
+        {
+            type = 'select',
+            label = t('distill_product_label'),
+            required = true,
+            options = options
+        }
+    })
+
+    if not input then
+        notify(t('distill_setup_cancelled'), 'error')
+        return
+    end
+
+    return input[1]
+end
+
 local function getDistillSettings()
     local input = lib.inputDialog(t('distill_setup_title'), {
         {
@@ -162,6 +195,14 @@ local function getDistillSettings()
         return
     end
 
+    local product = chooseDistillProduct(input[1])
+    if not product then
+        return
+    end
+
+    return {
+        source = input[1],
+        product = product,
     return {
         source = input[1],
         temp = math.floor(tonumber(input[2]) or 0),
