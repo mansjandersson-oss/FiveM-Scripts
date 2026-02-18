@@ -104,13 +104,6 @@ local function getDistillProfile(source, product, temp, time)
     if temp >= profile.temp.min and temp <= profile.temp.max
         and time >= profile.time.min and time <= profile.time.max then
         return profile
-local function getDistillProfile(source, temp, time)
-    for _, profile in ipairs(Config.DistillProfiles) do
-        if profile.source == source
-            and temp >= profile.temp.min and temp <= profile.temp.max
-            and time >= profile.time.min and time <= profile.time.max then
-            return profile
-        end
     end
 end
 
@@ -178,7 +171,7 @@ RegisterNetEvent('qb-boozebiz:server:FermentMash', function(fermentData)
 
     if not canCarryOutput(src, fermentRoute.output, fermentRoute.outputCount, {
         mashType = route,
-        label = fermentRoute.label
+        label = t(fermentRoute.labelKey or fermentRoute.label)
     }) then
         notify(src, t('no_space_mash_output'), 'error')
         return
@@ -192,7 +185,7 @@ RegisterNetEvent('qb-boozebiz:server:FermentMash', function(fermentData)
 
     local metadata = {
         mashType = route,
-        label = fermentRoute.label
+        label = t(fermentRoute.labelKey or fermentRoute.label)
     }
 
     local added = addOutput(src, fermentRoute.output, fermentRoute.outputCount, metadata)
@@ -201,7 +194,7 @@ RegisterNetEvent('qb-boozebiz:server:FermentMash', function(fermentData)
         return
     end
 
-    notify(src, t('fermentation_success', fermentRoute.outputCount, fermentRoute.label), 'success')
+    notify(src, t('fermentation_success', fermentRoute.outputCount, t(fermentRoute.labelKey or fermentRoute.label)), 'success')
 end)
 
 RegisterNetEvent('qb-boozebiz:server:DistillMash', function(distillData)
@@ -263,11 +256,8 @@ RegisterNetEvent('qb-boozebiz:server:DistillMash', function(distillData)
         return
     end
 
-    local alcoholType = profile.label
+    local alcoholType = t(profile.labelKey or profile.label)
     local purity = math.random(profile.purity.min, profile.purity.max)
-    local profile = getDistillProfile(sourceMash, temp, time)
-    local alcoholType = profile and profile.label or (sourceMash == 'beer' and 'Raw Grain Spirit' or 'Rustic Wine Spirit')
-    local purity = profile and math.random(profile.purity.min, profile.purity.max) or math.random(70, 84)
 
     local outputMetadata = {
         alcoholType = alcoholType,
@@ -457,7 +447,7 @@ RegisterNetEvent('qb-boozebiz:server:StockStore', function(zoneName)
     local payout = math.random(Config.MinDeliveryPayout, Config.MaxDeliveryPayout)
     player.Functions.AddMoney('bank', payout, 'booze-store-stock')
 
-    notify(src, t('stock_success', zone.label, payout), 'success')
+    notify(src, t('stock_success', t(zone.labelKey or zone.label), payout), 'success')
 end)
 
 AddEventHandler('playerDropped', function()

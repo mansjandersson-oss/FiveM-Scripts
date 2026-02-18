@@ -39,11 +39,11 @@ Config.Items = {
 }
 
 Config.Products = {
-    wine = 'Wine',
-    beer = 'Beer',
-    vodka = 'Vodka',
-    gin = 'Gin',
-    whiskey = 'Whiskey'
+    wine = 'product_wine',
+    beer = 'product_beer',
+    vodka = 'product_vodka',
+    gin = 'product_gin',
+    whiskey = 'product_whiskey'
 }
 
 Config.Minigames = {
@@ -89,7 +89,7 @@ Config.Minigames = {
 
 Config.FermentationRoutes = {
     wine = {
-        label = 'Wine Mash (Grapes)',
+        labelKey = 'route_wine_mash',
         output = Config.Items.wineMash,
         outputCount = 2,
         input = {
@@ -99,7 +99,7 @@ Config.FermentationRoutes = {
         }
     },
     beer = {
-        label = 'Beer Mash (Barley)',
+        labelKey = 'route_beer_mash',
         output = Config.Items.beerMash,
         outputCount = 2,
         input = {
@@ -113,25 +113,25 @@ Config.FermentationRoutes = {
 Config.DistillProfiles = {
     beer = {
         whiskey = {
-            label = Config.Products.whiskey,
+            labelKey = Config.Products.whiskey,
             temp = { min = 74, max = 83 },
             time = { min = 60, max = 95 },
             purity = { min = 82, max = 94 }
         },
         vodka = {
-            label = Config.Products.vodka,
+            labelKey = Config.Products.vodka,
             temp = { min = 84, max = 96 },
             time = { min = 45, max = 75 },
             purity = { min = 88, max = 99 }
         },
         gin = {
-            label = Config.Products.gin,
+            labelKey = Config.Products.gin,
             temp = { min = 68, max = 78 },
             time = { min = 80, max = 120 },
             purity = { min = 75, max = 90 }
         },
         beer = {
-            label = Config.Products.beer,
+            labelKey = Config.Products.beer,
             temp = { min = 60, max = 72 },
             time = { min = 25, max = 55 },
             purity = { min = 70, max = 82 }
@@ -139,7 +139,7 @@ Config.DistillProfiles = {
     },
     wine = {
         wine = {
-            label = Config.Products.wine,
+            labelKey = Config.Products.wine,
             temp = { min = 65, max = 86 },
             time = { min = 35, max = 90 },
             purity = { min = 72, max = 88 }
@@ -147,36 +147,6 @@ Config.DistillProfiles = {
     }
 }
 
-
-    {
-        source = 'beer',
-        label = 'Whiskey Spirit',
-        temp = { min = 74, max = 83 },
-        time = { min = 60, max = 95 },
-        purity = { min = 82, max = 94 }
-    },
-    {
-        source = 'beer',
-        label = 'Vodka Spirit',
-        temp = { min = 84, max = 96 },
-        time = { min = 45, max = 75 },
-        purity = { min = 88, max = 99 }
-    },
-    {
-        source = 'beer',
-        label = 'Gin Spirit',
-        temp = { min = 68, max = 78 },
-        time = { min = 80, max = 120 },
-        purity = { min = 75, max = 90 }
-    },
-    {
-        source = 'wine',
-        label = 'Wine Spirit',
-        temp = { min = 65, max = 86 },
-        time = { min = 35, max = 90 },
-        purity = { min = 72, max = 88 }
-    }
-}
 
 Config.Recipes = {
     Bottle = {
@@ -204,7 +174,7 @@ Config.Recipes = {
 Config.HarvestZones = {
     {
         name = 'grape_harvest',
-        label = 'Harvest Grapes',
+        labelKey = 'zone_harvest_grapes',
         icon = 'fa-solid fa-seedling',
         item = Config.Items.grape,
         count = { min = 2, max = 4 },
@@ -214,7 +184,7 @@ Config.HarvestZones = {
     },
     {
         name = 'barley_harvest',
-        label = 'Cut Barley',
+        labelKey = 'zone_harvest_barley',
         icon = 'fa-solid fa-wheat-awn',
         item = Config.Items.barley,
         count = { min = 1, max = 3 },
@@ -224,7 +194,7 @@ Config.HarvestZones = {
     },
     {
         name = 'spring_water_collect',
-        label = 'Collect Spring Water',
+        labelKey = 'zone_collect_water',
         icon = 'fa-solid fa-droplet',
         item = Config.Items.springWater,
         count = { min = 1, max = 2 },
@@ -234,7 +204,7 @@ Config.HarvestZones = {
     },
     {
         name = 'yeast_supply',
-        label = 'Collect Yeast Shipment',
+        labelKey = 'zone_collect_yeast',
         icon = 'fa-solid fa-box-open',
         item = Config.Items.yeast,
         count = { min = 1, max = 2 },
@@ -244,7 +214,7 @@ Config.HarvestZones = {
     },
     {
         name = 'bottle_supply',
-        label = 'Collect Empty Bottles',
+        labelKey = 'zone_collect_bottles',
         icon = 'fa-solid fa-wine-bottle',
         item = Config.Items.emptyBottle,
         count = { min = 2, max = 4 },
@@ -254,7 +224,7 @@ Config.HarvestZones = {
     },
     {
         name = 'cardboard_supply',
-        label = 'Collect Cardboard',
+        labelKey = 'zone_collect_cardboard',
         icon = 'fa-solid fa-box',
         item = Config.Items.cardboard,
         count = { min = 1, max = 2 },
@@ -267,7 +237,7 @@ Config.HarvestZones = {
 Config.ProcessingStations = {
     {
         name = 'fermentation_vat',
-        label = 'Start Fermentation',
+        labelKey = 'zone_start_fermentation',
         event = 'qb-boozebiz:client:FermentMash',
         icon = 'fa-solid fa-vial-circle-check',
         coords = vec3(1980.91, 3052.36, 47.22),
@@ -276,7 +246,7 @@ Config.ProcessingStations = {
     },
     {
         name = 'distillery_station',
-        label = 'Run Distillery',
+        labelKey = 'zone_run_distillery',
         event = 'qb-boozebiz:client:DistillSpirit',
         icon = 'fa-solid fa-fire-burner',
         coords = vec3(1983.35, 3055.81, 47.22),
@@ -285,7 +255,7 @@ Config.ProcessingStations = {
     },
     {
         name = 'bottling_line',
-        label = 'Bottle Liquor',
+        labelKey = 'zone_bottle_liquor',
         event = 'qb-boozebiz:client:BottleLiquor',
         icon = 'fa-solid fa-bottle-droplet',
         coords = vec3(1986.34, 3051.98, 47.22),
@@ -294,7 +264,7 @@ Config.ProcessingStations = {
     },
     {
         name = 'packing_table',
-        label = 'Pack Liquor Crate',
+        labelKey = 'zone_pack_crate',
         event = 'qb-boozebiz:client:PackCrate',
         icon = 'fa-solid fa-boxes-packing',
         coords = vec3(1988.83, 3048.32, 47.22),
@@ -306,7 +276,7 @@ Config.ProcessingStations = {
 Config.StockZones = {
     {
         name = 'downtown_liquor_stock',
-        label = 'Stock Downtown Liquor',
+        labelKey = 'zone_stock_downtown',
         icon = 'fa-solid fa-store',
         coords = vec3(-1222.2, -906.75, 12.33),
         size = vec3(1.8, 1.8, 2.0),
@@ -314,7 +284,7 @@ Config.StockZones = {
     },
     {
         name = 'sandy_liquor_stock',
-        label = 'Stock Sandy Liquor Ace',
+        labelKey = 'zone_stock_sandy',
         icon = 'fa-solid fa-store',
         coords = vec3(1393.12, 3605.16, 34.98),
         size = vec3(1.8, 1.8, 2.0),
@@ -322,7 +292,7 @@ Config.StockZones = {
     },
     {
         name = 'vespucci_liquor_stock',
-        label = 'Stock Vespucci Liquor',
+        labelKey = 'zone_stock_vespucci',
         icon = 'fa-solid fa-store',
         coords = vec3(-2966.51, 391.2, 15.04),
         size = vec3(1.8, 1.8, 2.0),
@@ -331,7 +301,7 @@ Config.StockZones = {
 }
 
 Config.Blips = {
-    { label = 'Booze Farm', sprite = 469, color = 25, scale = 0.8, coords = vec3(-1886.68, 2101.8, 140.98) },
-    { label = 'Distillery', sprite = 93, color = 47, scale = 0.8, coords = vec3(1983.35, 3055.81, 47.22) },
-    { label = 'Distribution Route', sprite = 478, color = 17, scale = 0.8, coords = vec3(-1222.2, -906.75, 12.33) }
+    { labelKey = 'blip_booze_farm', sprite = 469, color = 25, scale = 0.8, coords = vec3(-1886.68, 2101.8, 140.98) },
+    { labelKey = 'blip_distillery', sprite = 93, color = 47, scale = 0.8, coords = vec3(1983.35, 3055.81, 47.22) },
+    { labelKey = 'blip_distribution', sprite = 478, color = 17, scale = 0.8, coords = vec3(-1222.2, -906.75, 12.33) }
 }

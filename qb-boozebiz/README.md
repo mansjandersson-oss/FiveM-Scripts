@@ -61,6 +61,29 @@ Add these items where your server defines item data (QBCore items table or ox in
 ['liquor_crate'] = { name = 'liquor_crate', label = 'Liquor Crate', weight = 1200, type = 'item', image = 'crate.png', unique = false, useable = false, shouldClose = true, description = 'Packed crate ready for stocking' },
 ```
 
+
+## Item Pictures
+Binary item images are not committed (to avoid PR binary-file limitations).
+
+Generate item images locally:
+```bash
+python qb-boozebiz/scripts/generate_item_icons.py
+```
+
+This creates all required files in `qb-boozebiz/assets/items/`:
+- `grape.png`
+- `barley.png`
+- `yeast.png`
+- `water.png`
+- `mash.png`
+- `spirit.png`
+- `empty_bottle.png`
+- `cardboard.png`
+- `liquor.png`
+- `crate.png`
+
+Copy those files into your inventory image folder (for example `qb-inventory/html/images/` or your ox inventory image path).
+
 ## Configuration
 Tune all behavior in `config.lua`:
 - Progress durations

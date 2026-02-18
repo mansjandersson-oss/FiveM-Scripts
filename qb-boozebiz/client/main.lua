@@ -14,7 +14,7 @@ end
 
 local function notify(message, notifyType)
     lib.notify({
-        title = 'Booze Biz',
+        title = t('script_title'),
         description = message,
         type = notifyType or 'inform'
     })
@@ -203,8 +203,6 @@ local function getDistillSettings()
     return {
         source = input[1],
         product = product,
-    return {
-        source = input[1],
         temp = math.floor(tonumber(input[2]) or 0),
         time = math.floor(tonumber(input[3]) or 0)
     }
@@ -263,7 +261,7 @@ local function createBlips()
         SetBlipColour(blip, data.color)
         SetBlipAsShortRange(blip, true)
         BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(data.label)
+        AddTextComponentSubstringPlayerName(t(data.labelKey or data.label))
         EndTextCommandSetBlipName(blip)
     end
 end
@@ -278,7 +276,7 @@ local function registerHarvestTargets()
             options = {
                 {
                     name = zone.name,
-                    label = zone.label,
+                    label = t(zone.labelKey or zone.label),
                     icon = zone.icon,
                     distance = 2.0,
                     onSelect = function()
@@ -286,7 +284,7 @@ local function registerHarvestTargets()
                             return
                         end
 
-                        local completed = runAction(zone.label, Config.Progress.Harvest, {
+                        local completed = runAction(t(zone.labelKey or zone.label), Config.Progress.Harvest, {
                             dict = 'amb@world_human_gardener_plant@male@base',
                             clip = 'base',
                             flag = 1
@@ -315,7 +313,7 @@ local function registerProcessingTargets()
             options = {
                 {
                     name = station.name,
-                    label = station.label,
+                    label = t(station.labelKey or station.label),
                     icon = station.icon,
                     distance = 2.0,
                     onSelect = function()
@@ -337,7 +335,7 @@ local function registerStockTargets()
             options = {
                 {
                     name = zone.name,
-                    label = zone.label,
+                    label = t(zone.labelKey or zone.label),
                     icon = zone.icon,
                     distance = 2.0,
                     onSelect = function()

@@ -2,7 +2,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 name 'qb-boozebiz'
-author 'VikingStickarn'
+author 'Codex'
 description 'QBCore booze manufacturing: farm to liquor store with ox_inventory + ox_target'
 version '1.0.0'
 
