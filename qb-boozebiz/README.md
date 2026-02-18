@@ -94,6 +94,9 @@ Tune all behavior in `config.lua`:
 - Police requirement
 - Locale (`Config.Locale = 'en'`, `'sv'`, `'de'`, or `'es'`)
 
+## Author
+- Primary author for ongoing changes: **VikingStickarn**
+
 ## Language support
 - Translations are separated into `locales/locale.lua`.
 - Included locales: English (`en`), Swedish (`sv`), German (`de`), and Spanish (`es`).
