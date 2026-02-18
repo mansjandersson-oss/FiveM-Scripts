@@ -104,6 +104,13 @@ local function getDistillProfile(source, product, temp, time)
     if temp >= profile.temp.min and temp <= profile.temp.max
         and time >= profile.time.min and time <= profile.time.max then
         return profile
+local function getDistillProfile(source, temp, time)
+    for _, profile in ipairs(Config.DistillProfiles) do
+        if profile.source == source
+            and temp >= profile.temp.min and temp <= profile.temp.max
+            and time >= profile.time.min and time <= profile.time.max then
+            return profile
+        end
     end
 end
 
@@ -258,6 +265,9 @@ RegisterNetEvent('qb-boozebiz:server:DistillMash', function(distillData)
 
     local alcoholType = profile.label
     local purity = math.random(profile.purity.min, profile.purity.max)
+    local profile = getDistillProfile(sourceMash, temp, time)
+    local alcoholType = profile and profile.label or (sourceMash == 'beer' and 'Raw Grain Spirit' or 'Rustic Wine Spirit')
+    local purity = profile and math.random(profile.purity.min, profile.purity.max) or math.random(70, 84)
 
     local outputMetadata = {
         alcoholType = alcoholType,

@@ -148,6 +148,36 @@ Config.DistillProfiles = {
 }
 
 
+    {
+        source = 'beer',
+        label = 'Whiskey Spirit',
+        temp = { min = 74, max = 83 },
+        time = { min = 60, max = 95 },
+        purity = { min = 82, max = 94 }
+    },
+    {
+        source = 'beer',
+        label = 'Vodka Spirit',
+        temp = { min = 84, max = 96 },
+        time = { min = 45, max = 75 },
+        purity = { min = 88, max = 99 }
+    },
+    {
+        source = 'beer',
+        label = 'Gin Spirit',
+        temp = { min = 68, max = 78 },
+        time = { min = 80, max = 120 },
+        purity = { min = 75, max = 90 }
+    },
+    {
+        source = 'wine',
+        label = 'Wine Spirit',
+        temp = { min = 65, max = 86 },
+        time = { min = 35, max = 90 },
+        purity = { min = 72, max = 88 }
+    }
+}
+
 Config.Recipes = {
     Bottle = {
         input = {

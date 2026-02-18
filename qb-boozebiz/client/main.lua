@@ -203,6 +203,8 @@ local function getDistillSettings()
     return {
         source = input[1],
         product = product,
+    return {
+        source = input[1],
         temp = math.floor(tonumber(input[2]) or 0),
         time = math.floor(tonumber(input[3]) or 0)
     }
