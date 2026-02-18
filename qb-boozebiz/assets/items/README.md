@@ -20,4 +20,6 @@ This creates:
 - `liquor.png`
 - `crate.png`
 
+Generated icons are stylized (color-coded backgrounds + white item symbols) so they are easy to recognize in inventory UIs.
+
 Then copy them into your inventory image path (for example `qb-inventory/html/images/`).
