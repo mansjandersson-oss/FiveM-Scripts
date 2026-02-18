@@ -5,8 +5,8 @@ local processCooldowns = {}
 local deliveryCooldowns = {}
 
 local function t(key, ...)
-    local lang = Config.Translations[Config.Locale] or Config.Translations.en
-    local text = (lang and lang[key]) or (Config.Translations.en and Config.Translations.en[key]) or key
+    local lang = Locales[Config.Locale] or Locales.en
+    local text = (lang and lang[key]) or (Locales.en and Locales.en[key]) or key
 
     if select('#', ...) > 0 then
         return text:format(...)

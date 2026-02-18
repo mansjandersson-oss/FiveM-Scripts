@@ -69,11 +69,12 @@ Tune all behavior in `config.lua`:
 - Harvest/process/store locations
 - Payout range
 - Police requirement
-- Locale (`Config.Locale = 'en'` or `'sv'`)
+- Locale (`Config.Locale = 'en'`, `'sv'`, `'de'`, or `'es'`)
 
 ## Language support
-- English (`en`) and Swedish (`sv`) translations are included.
-- Set `Config.Locale = 'sv'` in `config.lua` to use Swedish text.
+- Translations are separated into `locales/locale.lua`.
+- Included locales: English (`en`), Swedish (`sv`), German (`de`), and Spanish (`es`).
+- Set `Config.Locale` in `config.lua` to choose language (for Swedish use `sv`).
 
 ## Notes
 - Bottled liquor receives metadata (`bottleName`, `purity`, `label`) via `ox_inventory`.
