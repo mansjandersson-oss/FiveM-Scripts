@@ -7,16 +7,16 @@ Config.Locale = 'en'
 Config.Criminal = {
     vehicleCount  = 3,       -- vehicles per contract
     cooldown      = 1800,    -- seconds before a new contract is available
-    minReward     = 5000,
-    maxReward     = 10000,
+    minReward     = 50,      -- minimum money-item count paid on contract turn-in
+    maxReward     = 100,     -- maximum money-item count paid on contract turn-in
     policeRequired = 0,      -- minimum police on duty required
 }
 
 -- ─── Civilian job settings ────────────────────────────────────────────────────
 Config.Civilian = {
-    cooldown         = 600,                          -- seconds between jobs
-    rewardPerPart    = { min = 80,  max = 150  },   -- cash per auto_part turned in
-    frameBonus       = { min = 200, max = 400  },   -- bonus cash for stripping the frame
+    cooldown      = 600,                         -- seconds between jobs
+    rewardPerPart = { min = 1, max = 3   },      -- money-item count per auto_part turned in
+    frameBonus    = { min = 5, max = 15  },      -- money-item count bonus for stripping the frame
 }
 
 -- ─── NPC definitions ──────────────────────────────────────────────────────────
@@ -110,7 +110,23 @@ Config.Items = {
     car_trunk_lid = 'car_trunk_lid',
     scrap_metal   = 'scrap_metal',
     auto_parts    = 'auto_parts',
+    -- Payment item: set to whatever your server uses for cash (e.g. 'black_money', 'money')
+    money         = 'black_money',
 }
+
+-- ─── Vehicle material rewards ─────────────────────────────────────────────────
+-- A random subset of these is given alongside the money item at each reward event.
+Config.MaterialRewards = {
+    { item = 'rubber',      count = { min = 1, max = 3 } },
+    { item = 'steel',       count = { min = 1, max = 3 } },
+    { item = 'aluminum',    count = { min = 1, max = 2 } },
+    { item = 'copper',      count = { min = 1, max = 2 } },
+    { item = 'plastic',     count = { min = 1, max = 3 } },
+    { item = 'glass',       count = { min = 1, max = 2 } },
+}
+
+-- How many different materials to pick per reward event
+Config.MaterialRewardCount = { min = 1, max = 3 }
 
 -- ─── Skill-check minigame configs ────────────────────────────────────────────
 Config.Minigames = {

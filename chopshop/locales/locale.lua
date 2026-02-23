@@ -47,7 +47,7 @@ Locales = {
         contract_vehicle_done     = '%s chopped. %s vehicle(s) remaining.',
         contract_all_done         = 'All contract vehicles chopped! Turn in to collect your payment.',
         contract_incomplete       = 'Contract is not complete yet.',
-        contract_turned_in        = 'Contract fulfilled. $%s cash paid.',
+        contract_turned_in        = 'Contract fulfilled. Received x%s payment and some materials.',
         not_enough_police         = 'Not enough police on duty (%s required).',
 
         -- Civilian job
@@ -57,10 +57,10 @@ Locales = {
         civilian_vehicle_blip    = 'Dismantle Vehicle',
         civilian_vehicle_ready   = 'A %s is waiting near the shop. Drive it to the chop zone.',
         vehicle_spawn_failed     = 'Could not retrieve the vehicle. Try again.',
-        civil_frame_stripped     = 'Frame fully stripped. Bonus payment of $%s added.',
+        civil_frame_stripped     = 'Frame fully stripped. Received x%s payment and some materials.',
         no_auto_parts            = 'You have no auto parts to turn in.',
         remove_parts_failed      = 'Could not remove parts from your inventory.',
-        civil_parts_turned_in    = 'Turned in %s auto part(s) for $%s.',
+        civil_parts_turned_in    = 'Turned in %s auto part(s). Received x%s payment and some materials.',
 
         -- Strip feedback
         part_stripped     = 'Stripped: %s.',
@@ -110,7 +110,7 @@ Locales = {
         contract_vehicle_done     = '%s demonterad. %s fordon kvar.',
         contract_all_done         = 'Alla kontraktfordon chopprade! Lämna in för betalning.',
         contract_incomplete       = 'Kontraktet är inte klart ännu.',
-        contract_turned_in        = 'Kontrakt fullgjort. $%s kontant betalt.',
+        contract_turned_in        = 'Kontrakt fullgjort. Fick x%s betalning och lite material.',
         not_enough_police         = 'Inte tillräckligt med polis i tjänst (%s krävs).',
 
         civil_job_already_active = 'Du har redan ett fordon att demontera.',
@@ -119,10 +119,10 @@ Locales = {
         civilian_vehicle_blip    = 'Demonteringsbil',
         civilian_vehicle_ready   = 'En %s väntar vid verkstaden. Kör den till chopzonen.',
         vehicle_spawn_failed     = 'Kunde inte hämta fordonet. Försök igen.',
-        civil_frame_stripped     = 'Ram helt demonterad. Bonusbetalning på $%s tillagd.',
+        civil_frame_stripped     = 'Ram helt demonterad. Fick x%s betalning och lite material.',
         no_auto_parts            = 'Du har inga bildelar att lämna in.',
         remove_parts_failed      = 'Kunde inte ta bort delar från inventariet.',
-        civil_parts_turned_in    = 'Lämnade in %s bildel(ar) för $%s.',
+        civil_parts_turned_in    = 'Lämnade in %s bildel(ar). Fick x%s betalning och lite material.',
 
         part_stripped     = 'Demonterad: %s.',
         frame_stripped    = 'Ram demonterad och fordon borttaget.',

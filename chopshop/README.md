@@ -70,6 +70,50 @@ Add the following items to your OX Inventory `items.lua`:
     stack = true,
     close = true,
 },
+-- Payment item (name must match Config.Items.money)
+['black_money'] = {
+    label = 'Black Money',
+    weight = 500,
+    stack = true,
+    close = true,
+},
+-- Vehicle material rewards (add any you don't already have)
+['rubber'] = {
+    label = 'Rubber',
+    weight = 300,
+    stack = true,
+    close = true,
+},
+['steel'] = {
+    label = 'Steel',
+    weight = 2000,
+    stack = true,
+    close = true,
+},
+['aluminum'] = {
+    label = 'Aluminum',
+    weight = 1500,
+    stack = true,
+    close = true,
+},
+['copper'] = {
+    label = 'Copper',
+    weight = 1000,
+    stack = true,
+    close = true,
+},
+['plastic'] = {
+    label = 'Plastic',
+    weight = 400,
+    stack = true,
+    close = true,
+},
+['glass'] = {
+    label = 'Glass',
+    weight = 800,
+    stack = true,
+    close = true,
+},
 ```
 
 ## Configuration
@@ -80,11 +124,14 @@ All tuneable values are in `config.lua`:
 |---|---|---|
 | `Config.Criminal` | `vehicleCount` | Number of vehicles per contract (default 3) |
 | `Config.Criminal` | `cooldown` | Seconds between new contracts (default 1800) |
-| `Config.Criminal` | `minReward` / `maxReward` | Cash range for a completed contract |
+| `Config.Criminal` | `minReward` / `maxReward` | Money-item count range paid on contract turn-in |
 | `Config.Criminal` | `policeRequired` | Minimum police online to get a contract |
 | `Config.Civilian` | `cooldown` | Seconds between civilian jobs (default 600) |
-| `Config.Civilian` | `rewardPerPart` | Cash per `auto_parts` item turned in |
-| `Config.Civilian` | `frameBonus` | Bonus cash for completing the frame strip |
+| `Config.Civilian` | `rewardPerPart` | Money-item count per `auto_parts` item turned in |
+| `Config.Civilian` | `frameBonus` | Money-item count bonus for completing the frame strip |
+| `Config.Items` | `money` | Item name used as payment (e.g. `'black_money'`) |
+| `Config.MaterialRewards` | — | Pool of vehicle materials that can be awarded randomly |
+| `Config.MaterialRewardCount` | `min` / `max` | How many different materials to pick per reward event |
 | `Config.NPCs` | — | Coords and ped models for both NPCs |
 | `Config.ChopZone` | — | Location, size and rotation of the chop area |
 | `Config.ContractVehicles` | — | Pool of vehicle models for criminal contracts |

@@ -62,6 +62,28 @@ local function canCarry(src, item, count, metadata)
     return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
 end
 
+-- Pick a random subset of Config.MaterialRewards and give them to the player.
+-- Silently skips any material the player cannot carry.
+local function giveRandomMaterials(src)
+    local pool = {}
+    for _, m in ipairs(Config.MaterialRewards) do
+        pool[#pool + 1] = m
+    end
+    -- Fisher-Yates shuffle
+    for i = #pool, 2, -1 do
+        local j = math.random(i)
+        pool[i], pool[j] = pool[j], pool[i]
+    end
+    local pick = math.random(Config.MaterialRewardCount.min, Config.MaterialRewardCount.max)
+    for i = 1, math.min(pick, #pool) do
+        local m     = pool[i]
+        local count = math.random(m.count.min, m.count.max)
+        if canCarry(src, m.item, count) then
+            addItem(src, m.item, count)
+        end
+    end
+end
+
 -- Build a randomised contract (no duplicate models)
 local function buildContract()
     local pool = {}
@@ -162,7 +184,8 @@ RegisterNetEvent('chopshop:server:TurnInContract', function()
     end
 
     local reward = math.random(Config.Criminal.minReward, Config.Criminal.maxReward)
-    player.Functions.AddMoney('cash', reward, 'chopshop-contract-reward')
+    addItem(src, Config.Items.money, reward)
+    giveRandomMaterials(src)
     contracts[src] = nil
 
     notify(src, t('contract_turned_in', reward), 'success')
@@ -239,7 +262,8 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
         Config.Civilian.rewardPerPart.min,
         Config.Civilian.rewardPerPart.max
     )
-    player.Functions.AddMoney('cash', reward, 'chopshop-civil-parts')
+    addItem(src, Config.Items.money, reward)
+    giveRandomMaterials(src)
     civilianJobs[src] = nil
 
     notify(src, t('civil_parts_turned_in', partsCount, reward), 'success')
@@ -292,9 +316,10 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     end
 
     if isCivil then
-        -- Give the frame bonus directly
+        -- Give the frame bonus as money item + random materials
         local bonus = math.random(Config.Civilian.frameBonus.min, Config.Civilian.frameBonus.max)
-        player.Functions.AddMoney('cash', bonus, 'chopshop-civil-frame')
+        addItem(src, Config.Items.money, bonus)
+        giveRandomMaterials(src)
         job.active = false
         notify(src, t('civil_frame_stripped', bonus), 'success')
     else
