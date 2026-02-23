@@ -350,13 +350,19 @@ end
 
 local function createBlips()
     local cn = Config.NPCs.criminal
-    createBlip(cn.coords, cn.blip.sprite, cn.blip.color, cn.blip.scale, t(cn.blip.labelKey))
+    if cn.blip.enabled ~= false then
+        createBlip(cn.coords, cn.blip.sprite, cn.blip.color, cn.blip.scale, t(cn.blip.labelKey))
+    end
 
     local cv = Config.NPCs.civilian
-    createBlip(cv.coords, cv.blip.sprite, cv.blip.color, cv.blip.scale, t(cv.blip.labelKey))
+    if cv.blip.enabled ~= false then
+        createBlip(cv.coords, cv.blip.sprite, cv.blip.color, cv.blip.scale, t(cv.blip.labelKey))
+    end
 
     local cz = Config.ChopZone
-    createBlip(cz.coords, cz.blip.sprite, cz.blip.color, cz.blip.scale, t(cz.blip.labelKey))
+    if cz.blip.enabled ~= false then
+        createBlip(cz.coords, cz.blip.sprite, cz.blip.color, cz.blip.scale, t(cz.blip.labelKey))
+    end
 end
 
 -- ─── Server → Client events ───────────────────────────────────────────────────

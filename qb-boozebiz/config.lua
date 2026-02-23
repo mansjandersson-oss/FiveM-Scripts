@@ -301,7 +301,7 @@ Config.StockZones = {
 }
 
 Config.Blips = {
-    { labelKey = 'blip_booze_farm', sprite = 469, color = 25, scale = 0.8, coords = vec3(-1886.68, 2101.8, 140.98) },
-    { labelKey = 'blip_distillery', sprite = 93, color = 47, scale = 0.8, coords = vec3(1983.35, 3055.81, 47.22) },
-    { labelKey = 'blip_distribution', sprite = 478, color = 17, scale = 0.8, coords = vec3(-1222.2, -906.75, 12.33) }
+    { enabled = true, labelKey = 'blip_booze_farm',   sprite = 469, color = 25, scale = 0.8, coords = vec3(-1886.68, 2101.8, 140.98) },
+    { enabled = true, labelKey = 'blip_distillery',   sprite = 93,  color = 47, scale = 0.8, coords = vec3(1983.35, 3055.81, 47.22)  },
+    { enabled = true, labelKey = 'blip_distribution', sprite = 478, color = 17, scale = 0.8, coords = vec3(-1222.2, -906.75, 12.33)  }
 }

@@ -25,13 +25,13 @@ Config.NPCs = {
         name   = 'chop_criminal_npc',
         model  = 'g_m_m_chigoon_01',
         coords = vec4(947.51, -3096.07, 5.9, 182.17),
-        blip   = { sprite = 61,  color = 1, scale = 0.8, labelKey = 'blip_criminal_npc' }
+        blip   = { enabled = true, sprite = 61,  color = 1, scale = 0.8, labelKey = 'blip_criminal_npc' }
     },
     civilian = {
         name   = 'chop_civilian_npc',
         model  = 's_m_m_mech_01',
         coords = vec4(-352.14, -135.95, 38.31, 248.31),
-        blip   = { sprite = 431, color = 3, scale = 0.8, labelKey = 'blip_civilian_npc' }
+        blip   = { enabled = true, sprite = 431, color = 3, scale = 0.8, labelKey = 'blip_civilian_npc' }
     }
 }
 
@@ -41,7 +41,7 @@ Config.ChopZone = {
     size                    = vec3(25.0, 25.0, 4.0),
     rotation                = 270.0,
     vehicleDetectionDistance = 8.0,   -- metres: how close a vehicle must be to show strip options
-    blip                    = { sprite = 50, color = 4, scale = 0.8, labelKey = 'blip_chop_zone' }
+    blip                    = { enabled = true, sprite = 50, color = 4, scale = 0.8, labelKey = 'blip_chop_zone' }
 }
 
 -- ─── Contract vehicles (criminal) ────────────────────────────────────────────
