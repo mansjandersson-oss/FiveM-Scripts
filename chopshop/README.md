@@ -18,8 +18,8 @@ A FiveM resource that adds an immersive chop-shop experience for both **criminal
 7. Return to the NPC when all vehicles are done and **Turn In** the contract for a cash reward.
 
 ### 🔵 Civilian Route
-1. Talk to the **Auto Dismantler** NPC to receive a random vehicle model to dismantle.
-2. Find that vehicle model already roaming the streets and drive it to the **Chop Zone**.
+1. Talk to the **Auto Dismantler** NPC to receive a random vehicle to dismantle.
+2. The vehicle spawns near the NPC — drive it to the **Chop Zone**.
 3. Strip all parts (same process as criminal). Each part gives `auto_parts` items instead of the individual part items.
 4. Stripping the frame awards a small bonus cash payment automatically.
 5. Return to the NPC and **Turn In Auto Parts** to exchange them for cash.
