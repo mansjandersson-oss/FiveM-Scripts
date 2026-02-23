@@ -112,6 +112,9 @@ Config.Items = {
     auto_parts    = 'auto_parts',
     -- Payment item: set to whatever your server uses for cash (e.g. 'black_money', 'money')
     money         = 'black_money',
+    -- Contract item given to the player when a criminal contract is issued.
+    -- Using this item after a crash restores the active contract.
+    chop_contract = 'chop_contract',
 }
 
 -- ─── Vehicle material rewards ─────────────────────────────────────────────────

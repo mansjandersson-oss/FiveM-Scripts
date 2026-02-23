@@ -62,6 +62,30 @@ local function canCarry(src, item, count, metadata)
     return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
 end
 
+-- Read the chop_contract item's metadata from the player's inventory.
+-- Returns the metadata table, or nil if the item is not found.
+local function getContractItemMetadata(src)
+    local slots = exports.ox_inventory:Search(src, 'slots', Config.Items.chop_contract)
+    if slots and slots[1] then
+        local item = exports.ox_inventory:GetSlot(src, slots[1])
+        if item and item.metadata and item.metadata.vehicles then
+            return item.metadata, slots[1]
+        end
+    end
+    return nil
+end
+
+-- Update the chop_contract item's metadata to reflect the latest contract state.
+-- Used to keep item metadata in sync so crash recovery restores the correct progress.
+local function updateContractItemMetadata(src, metadata)
+    local _, slot = getContractItemMetadata(src)
+    if slot then
+        exports.ox_inventory:SetMetadata(src, slot, metadata)
+    elseif Config.Debug then
+        print(('[chopshop] updateContractItemMetadata: %s not found for source %s'):format(Config.Items.chop_contract, src))
+    end
+end
+
 -- Roll each material independently using its own drop chance.
 -- Silently skips any material the player cannot carry.
 local function giveRandomMaterials(src)
@@ -115,7 +139,7 @@ RegisterNetEvent('chopshop:server:GetContract', function()
         return
     end
 
-    -- Reject if an unfinished contract already exists
+    -- Reject if an unfinished contract already exists (server state or item in inventory)
     local existing = contracts[src]
     if existing and existing.vehicles then
         for _, v in ipairs(existing.vehicles) do
@@ -124,6 +148,10 @@ RegisterNetEvent('chopshop:server:GetContract', function()
                 return
             end
         end
+    elseif countItem(src, Config.Items.chop_contract) > 0 then
+        -- Player crashed mid-contract; item still in inventory — tell them to use it
+        notify(src, t('contract_use_item_to_restore'), 'error')
+        return
     end
 
     local blocked, remaining = hasCooldown(contractCooldowns, src, Config.Criminal.cooldown)
@@ -134,6 +162,9 @@ RegisterNetEvent('chopshop:server:GetContract', function()
 
     local vehicles = buildContract()
     contracts[src] = { vehicles = vehicles, completed = {} }
+
+    -- Give the player a physical contract item they can use to restore progress after a crash
+    addItem(src, Config.Items.chop_contract, 1, { vehicles = vehicles, completed = {} })
 
     TriggerClientEvent('chopshop:client:SpawnContractVehicles', src, { vehicles = vehicles })
     TriggerClientEvent('chopshop:client:ShowContract', src, {
@@ -177,6 +208,7 @@ RegisterNetEvent('chopshop:server:TurnInContract', function()
     local reward = math.random(Config.Criminal.minReward, Config.Criminal.maxReward)
     addItem(src, Config.Items.money, reward)
     giveRandomMaterials(src)
+    removeItem(src, Config.Items.chop_contract, 1)
     contracts[src] = nil
 
     notify(src, t('contract_turned_in', reward), 'success')
@@ -320,6 +352,8 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
             for _, v in ipairs(contract.vehicles) do
                 if v.model:lower() == modelName:lower() and not contract.completed[v.model] then
                     contract.completed[v.model] = true
+                    -- Keep the contract item metadata in sync for crash recovery
+                    updateContractItemMetadata(src, { vehicles = contract.vehicles, completed = contract.completed })
 
                     local remaining = 0
                     for _, cv in ipairs(contract.vehicles) do
@@ -339,6 +373,49 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
         end
         notify(src, t('frame_stripped'), 'success')
     end
+end)
+
+-- ─── Contract item: crash recovery ───────────────────────────────────────────
+-- When a player uses the chop_contract item, restore their active contract from
+-- the item metadata (handles the case where the server state was lost on crash).
+
+exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, function(src)
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    local contract = contracts[src]
+
+    if contract and contract.vehicles then
+        -- Contract is still active in server state — just display it
+        TriggerClientEvent('chopshop:client:ShowContract', src, {
+            vehicles  = contract.vehicles,
+            completed = contract.completed
+        })
+        notify(src, t('contract_restored'), 'success')
+        return
+    end
+
+    -- Server state lost (e.g. after a crash) – restore from item metadata
+    local meta = getContractItemMetadata(src)
+    if meta then
+        contracts[src] = {
+            vehicles  = meta.vehicles,
+            completed = meta.completed or {}
+        }
+        contract = contracts[src]
+    end
+
+    if not contract or not contract.vehicles then
+        notify(src, t('no_active_contract'), 'error')
+        return
+    end
+
+    TriggerClientEvent('chopshop:client:SpawnContractVehicles', src, { vehicles = contract.vehicles })
+    TriggerClientEvent('chopshop:client:ShowContract', src, {
+        vehicles  = contract.vehicles,
+        completed = contract.completed
+    })
+    notify(src, t('contract_restored'), 'success')
 end)
 
 -- ─── Cleanup on disconnect ────────────────────────────────────────────────────
