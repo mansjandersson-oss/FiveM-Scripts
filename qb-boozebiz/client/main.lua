@@ -254,15 +254,17 @@ end
 
 local function createBlips()
     for _, data in ipairs(Config.Blips) do
-        local blip = AddBlipForCoord(data.coords.x, data.coords.y, data.coords.z)
-        SetBlipSprite(blip, data.sprite)
-        SetBlipDisplay(blip, 4)
-        SetBlipScale(blip, data.scale)
-        SetBlipColour(blip, data.color)
-        SetBlipAsShortRange(blip, true)
-        BeginTextCommandSetBlipName('STRING')
-        AddTextComponentSubstringPlayerName(t(data.labelKey or data.label))
-        EndTextCommandSetBlipName(blip)
+        if data.enabled ~= false then
+            local blip = AddBlipForCoord(data.coords.x, data.coords.y, data.coords.z)
+            SetBlipSprite(blip, data.sprite)
+            SetBlipDisplay(blip, 4)
+            SetBlipScale(blip, data.scale)
+            SetBlipColour(blip, data.color)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(t(data.labelKey or data.label))
+            EndTextCommandSetBlipName(blip)
+        end
     end
 end
 
