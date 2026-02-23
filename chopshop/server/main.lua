@@ -75,11 +75,23 @@ local function getContractItemMetadata(src)
     return nil
 end
 
+-- Build a human-readable vehicle list for the contract item description.
+-- Each line shows the completion status and vehicle label.
+local function buildContractDescription(vehicles, completed)
+    local lines = {}
+    for i, v in ipairs(vehicles) do
+        local tick = completed[v.model] and '✓' or '○'
+        lines[#lines + 1] = ('%s %d. %s'):format(tick, i, v.label)
+    end
+    return table.concat(lines, '\n')
+end
+
 -- Update the chop_contract item's metadata to reflect the latest contract state.
 -- Used to keep item metadata in sync so crash recovery restores the correct progress.
 local function updateContractItemMetadata(src, metadata)
     local _, slot = getContractItemMetadata(src)
     if slot then
+        metadata.description = buildContractDescription(metadata.vehicles, metadata.completed)
         exports.ox_inventory:SetMetadata(src, slot, metadata)
     elseif Config.Debug then
         print(('[chopshop] updateContractItemMetadata: %s not found for source %s'):format(Config.Items.chop_contract, src))
@@ -164,7 +176,11 @@ RegisterNetEvent('chopshop:server:GetContract', function()
     contracts[src] = { vehicles = vehicles, completed = {} }
 
     -- Give the player a physical contract item they can use to restore progress after a crash
-    addItem(src, Config.Items.chop_contract, 1, { vehicles = vehicles, completed = {} })
+    addItem(src, Config.Items.chop_contract, 1, {
+        vehicles    = vehicles,
+        completed   = {},
+        description = buildContractDescription(vehicles, {})
+    })
 
     TriggerClientEvent('chopshop:client:SpawnContractVehicles', src, { vehicles = vehicles })
     TriggerClientEvent('chopshop:client:ShowContract', src, {
