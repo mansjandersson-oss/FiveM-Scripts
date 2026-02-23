@@ -62,24 +62,15 @@ local function canCarry(src, item, count, metadata)
     return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
 end
 
--- Pick a random subset of Config.MaterialRewards and give them to the player.
+-- Roll each material independently using its own drop chance.
 -- Silently skips any material the player cannot carry.
 local function giveRandomMaterials(src)
-    local pool = {}
     for _, m in ipairs(Config.MaterialRewards) do
-        pool[#pool + 1] = m
-    end
-    -- Fisher-Yates shuffle
-    for i = #pool, 2, -1 do
-        local j = math.random(i)
-        pool[i], pool[j] = pool[j], pool[i]
-    end
-    local pick = math.random(Config.MaterialRewardCount.min, Config.MaterialRewardCount.max)
-    for i = 1, math.min(pick, #pool) do
-        local m     = pool[i]
-        local count = math.random(m.count.min, m.count.max)
-        if canCarry(src, m.item, count) then
-            addItem(src, m.item, count)
+        if math.random(100) <= m.chance then
+            local count = math.random(m.count.min, m.count.max)
+            if canCarry(src, m.item, count) then
+                addItem(src, m.item, count)
+            end
         end
     end
 end

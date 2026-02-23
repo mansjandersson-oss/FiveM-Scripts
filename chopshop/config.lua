@@ -115,18 +115,16 @@ Config.Items = {
 }
 
 -- ─── Vehicle material rewards ─────────────────────────────────────────────────
--- A random subset of these is given alongside the money item at each reward event.
+-- Each entry is rolled independently at every reward event.
+-- chance: 0-100 percentage probability this item is awarded.
 Config.MaterialRewards = {
-    { item = 'rubber',      count = { min = 1, max = 3 } },
-    { item = 'steel',       count = { min = 1, max = 3 } },
-    { item = 'aluminum',    count = { min = 1, max = 2 } },
-    { item = 'copper',      count = { min = 1, max = 2 } },
-    { item = 'plastic',     count = { min = 1, max = 3 } },
-    { item = 'glass',       count = { min = 1, max = 2 } },
+    { item = 'rubber',      chance = 70, count = { min = 1, max = 3 } },
+    { item = 'steel',       chance = 60, count = { min = 1, max = 3 } },
+    { item = 'aluminum',    chance = 50, count = { min = 1, max = 2 } },
+    { item = 'copper',      chance = 40, count = { min = 1, max = 2 } },
+    { item = 'plastic',     chance = 65, count = { min = 1, max = 3 } },
+    { item = 'glass',       chance = 35, count = { min = 1, max = 2 } },
 }
-
--- How many different materials to pick per reward event
-Config.MaterialRewardCount = { min = 1, max = 3 }
 
 -- ─── Skill-check minigame configs ────────────────────────────────────────────
 Config.Minigames = {
