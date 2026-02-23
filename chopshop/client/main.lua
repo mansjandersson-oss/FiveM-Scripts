@@ -386,85 +386,14 @@ RegisterNetEvent('chopshop:client:ShowContract', function(contractData)
     })
 end)
 
--- Spawn contract vehicles at map locations and add blips for the criminal
+-- Contract vehicles are not spawned – they are already roaming the city.
+-- Notify the player to find the contract vehicle models on the streets.
 RegisterNetEvent('chopshop:client:SpawnContractVehicles', function(contractData)
-    -- Clean up any previous contract vehicles
-    for _, cv in ipairs(contractVehicles) do
-        if DoesBlipExist(cv.blip) then RemoveBlip(cv.blip) end
-        if DoesEntityExist(cv.entity) then despawnVehicle(cv.entity) end
-    end
-    contractVehicles = {}
-
-    -- Shuffle spawn points so each run feels different
-    local points = {}
-    for _, sp in ipairs(Config.ContractSpawnPoints) do
-        points[#points + 1] = sp
-    end
-    for i = #points, 2, -1 do
-        local j = math.random(i)
-        points[i], points[j] = points[j], points[i]
-    end
-
-    for i, v in ipairs(contractData.vehicles) do
-        local sp    = points[i]
-        local model = v.model
-
-        if loadModel(model) then
-            local veh = CreateVehicle(model, sp.x, sp.y, sp.z, sp.w, true, false)
-            SetVehicleOnGroundProperly(veh)
-            SetEntityAsMissionEntity(veh, true, true)
-            -- Lock so the player must break in (immersion)
-            SetVehicleDoorsLocked(veh, 2)
-            SetModelAsNoLongerNeeded(model)
-
-            local blip = AddBlipForEntity(veh)
-            SetBlipSprite(blip, 225)
-            SetBlipColour(blip, 1)      -- red
-            SetBlipAsShortRange(blip, false)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(t('contract_vehicle_blip', v.label))
-            EndTextCommandSetBlipName(blip)
-
-            contractVehicles[#contractVehicles + 1] = {
-                entity = veh,
-                blip   = blip,
-                model  = v.model
-            }
-        end
-    end
-
     notify(t('contract_vehicles_spawned'), 'inform')
 end)
 
--- Spawn the civilian vehicle near the NPC
+-- No vehicle is spawned – notify the player to find the model on the streets.
 RegisterNetEvent('chopshop:client:SpawnCivilianVehicle', function(vehicleData)
-    local sp    = Config.CivilianVehicleSpawn
-    local model = vehicleData.model
-
-    if not loadModel(model) then
-        notify(t('vehicle_spawn_failed'), 'error')
-        return
-    end
-
-    local veh = CreateVehicle(model, sp.x, sp.y, sp.z, sp.w, true, false)
-    SetVehicleOnGroundProperly(veh)
-    SetEntityAsMissionEntity(veh, true, true)
-    SetModelAsNoLongerNeeded(model)
-
-    local netId = NetworkGetNetworkIdFromEntity(veh)
-    TriggerServerEvent('chopshop:server:RegisterCivilianVehicle', netId)
-
-    if civilianVehicleBlip and DoesBlipExist(civilianVehicleBlip) then
-        RemoveBlip(civilianVehicleBlip)
-    end
-    civilianVehicleBlip = AddBlipForEntity(veh)
-    SetBlipSprite(civilianVehicleBlip, 225)
-    SetBlipColour(civilianVehicleBlip, 3)     -- blue
-    SetBlipAsShortRange(civilianVehicleBlip, false)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(t('civilian_vehicle_blip'))
-    EndTextCommandSetBlipName(civilianVehicleBlip)
-
     notify(t('civilian_vehicle_ready', vehicleData.label), 'success')
 end)
 

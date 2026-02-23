@@ -6,8 +6,8 @@ A FiveM resource that adds an immersive chop-shop experience for both **criminal
 
 ### 🔴 Criminal Route
 1. Talk to the **Shady Contact** NPC to receive a contract for **3 vehicles**.
-2. Contract vehicles spawn at randomised locations on the map — blips appear on the minimap.
-3. Break in, steal and drive each vehicle to the **Chop Zone**.
+2. The contract lists the vehicle models to find — they are already roaming the city (no map blips).
+3. Find any vehicle matching a contract model on the streets, steal it and drive it to the **Chop Zone**.
 4. Park and exit the vehicle inside the zone, then use **OX-Target** to strip each part:
    - Driver Door
    - Passenger Door
@@ -18,8 +18,8 @@ A FiveM resource that adds an immersive chop-shop experience for both **criminal
 7. Return to the NPC when all vehicles are done and **Turn In** the contract for a cash reward.
 
 ### 🔵 Civilian Route
-1. Talk to the **Auto Dismantler** NPC to receive a random vehicle to dismantle.
-2. The vehicle spawns near the NPC — drive it to the **Chop Zone**.
+1. Talk to the **Auto Dismantler** NPC to receive a random vehicle model to dismantle.
+2. Find that vehicle model already roaming the streets and drive it to the **Chop Zone**.
 3. Strip all parts (same process as criminal). Each part gives `auto_parts` items instead of the individual part items.
 4. Stripping the frame awards a small bonus cash payment automatically.
 5. Return to the NPC and **Turn In Auto Parts** to exchange them for cash.
