@@ -6,16 +6,18 @@ A FiveM resource that adds an immersive chop-shop experience for both **criminal
 
 ### 🔴 Criminal Route
 1. Talk to the **Shady Contact** NPC to receive a contract for **3 vehicles**.
-2. The contract lists the vehicle models to find — they are already roaming the city (no map blips).
-3. Find any vehicle matching a contract model on the streets, steal it and drive it to the **Chop Zone**.
-4. Park and exit the vehicle inside the zone, then use **OX-Target** to strip each part:
+2. A **Contract** item is added to your inventory — check it with `view contract` at the NPC, or use it after a crash to restore your progress.
+3. The contract lists the vehicle models to find — they are already roaming the city (no map blips).
+4. Find any vehicle matching a contract model on the streets, steal it and drive it to the **Chop Zone**.
+5. Park and exit the vehicle inside the zone, then use **OX-Target** to strip each part:
    - Driver Door
    - Passenger Door
    - Hood
    - Trunk Lid
-5. Once all parts are removed, the **Strip Frame** option appears — complete it to despawn the vehicle.
-6. The contact NPC tracks your progress after each vehicle is finished.
-7. Return to the NPC when all vehicles are done and **Turn In** the contract for a cash reward.
+6. Once all parts are removed, the **Strip Frame** option appears — complete it to despawn the vehicle.
+7. The contact NPC tracks your progress after each vehicle is finished.
+8. If you crash mid-contract, **use the Contract item** in your inventory to restore your progress.
+9. Return to the NPC when all vehicles are done and **Turn In** the contract for a cash reward (the item is removed automatically).
 
 ### 🔵 Civilian Route
 1. Talk to the **Auto Dismantler** NPC to receive a random vehicle to dismantle.
@@ -68,6 +70,12 @@ Add the following items to your OX Inventory `items.lua`:
     label = 'Auto Parts',
     weight = 2000,
     stack = true,
+    close = true,
+},
+['chop_contract'] = {
+    label = 'Vehicle Contract',
+    weight = 100,
+    stack = false,
     close = true,
 },
 -- Payment item (name must match Config.Items.money)
@@ -130,6 +138,7 @@ All tuneable values are in `config.lua`:
 | `Config.Civilian` | `rewardPerPart` | Money-item count per `auto_parts` item turned in |
 | `Config.Civilian` | `frameBonus` | Money-item count bonus for completing the frame strip |
 | `Config.Items` | `money` | Item name used as payment (e.g. `'black_money'`) |
+| `Config.Items` | `chop_contract` | Item given to the player when a contract is issued (used for crash recovery) |
 | `Config.MaterialRewards` | — | Pool of vehicle materials that can be awarded randomly |
 | `Config.MaterialRewardCount` | `min` / `max` | How many different materials to pick per reward event |
 | `Config.NPCs` | — | Coords and ped models for both NPCs |

@@ -39,6 +39,7 @@ Locales = {
         contract_status_title     = 'Active Contract',
         no_active_contract        = 'You do not have an active contract.',
         contract_already_active   = 'You already have an active contract. Finish it first.',
+        contract_use_item_to_restore = 'You already have a contract. Use the Contract item in your inventory to restore it.',
         contract_cooldown         = 'You cannot take a new contract yet. Wait %ss.',
         contract_received         = 'Contract issued: steal %s vehicles and chop them.',
         contract_vehicles_spawned = 'Find the contract vehicles already roaming the city and bring each one to the chop zone.',
@@ -48,6 +49,7 @@ Locales = {
         contract_all_done         = 'All contract vehicles chopped! Turn in to collect your payment.',
         contract_incomplete       = 'Contract is not complete yet.',
         contract_turned_in        = 'Contract fulfilled. Received x%s payment and some materials.',
+        contract_restored         = 'Contract restored. Find the vehicles and bring them to the chop zone.',
         not_enough_police         = 'Not enough police on duty (%s required).',
 
         -- Civilian job
@@ -102,6 +104,7 @@ Locales = {
         contract_status_title     = 'Aktivt kontrakt',
         no_active_contract        = 'Du har inget aktivt kontrakt.',
         contract_already_active   = 'Du har redan ett aktivt kontrakt. Avsluta det först.',
+        contract_use_item_to_restore = 'Du har redan ett kontrakt. Använd kontraktitemsen i ditt inventariet för att återställa det.',
         contract_cooldown         = 'Du kan inte ta ett nytt kontrakt ännu. Vänta %ss.',
         contract_received         = 'Kontrakt utfärdat: stjäl %s fordon och choppra dem.',
         contract_vehicles_spawned = 'Hitta kontraktfordonen som redan rör sig i staden och kör dem till chopzonen.',
@@ -111,6 +114,7 @@ Locales = {
         contract_all_done         = 'Alla kontraktfordon chopprade! Lämna in för betalning.',
         contract_incomplete       = 'Kontraktet är inte klart ännu.',
         contract_turned_in        = 'Kontrakt fullgjort. Fick x%s betalning och lite material.',
+        contract_restored         = 'Kontrakt återställt. Hitta fordonen och kör dem till chopzonen.',
         not_enough_police         = 'Inte tillräckligt med polis i tjänst (%s krävs).',
 
         civil_job_already_active = 'Du har redan ett fordon att demontera.',
