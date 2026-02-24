@@ -152,7 +152,7 @@ function QBCore.Player.CheckPlayerData(source, PlayerData)
         end
     end
 
-    if GetResourceState('qb-inventory') ~= 'missing' then
+    if GetResourceState('qb-inventory') ~= 'missing' and GetResourceState('ox_inventory') == 'missing' then
         PlayerData.items = exports['qb-inventory']:LoadInventory(PlayerData.source, PlayerData.citizenid)
     end
 
