@@ -3,6 +3,9 @@ Config = {}
 Config.Debug = false
 Config.Locale = 'en'
 
+-- Inventory system to use: 'ox_inventory' or 'qb-inventory'
+Config.Inventory = 'ox_inventory'
+
 -- ─── Criminal contract settings ───────────────────────────────────────────────
 Config.Criminal = {
     vehicleCount  = 3,       -- vehicles per contract
@@ -103,7 +106,7 @@ Config.FrameStrip = {
     duration   = 15000,
 }
 
--- ─── Item names (match your OX inventory item names) ──────────────────────────
+-- ─── Item names (match your inventory item names) ────────────────────────────
 Config.Items = {
     car_door      = 'car_door',
     car_hood      = 'car_hood',

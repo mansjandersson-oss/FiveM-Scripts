@@ -45,34 +45,53 @@ local function hasCooldown(bucket, src, seconds)
     return false, 0
 end
 
--- OX inventory helpers
-local function addItem(src, item, count, metadata)
-    return exports.ox_inventory:AddItem(src, item, count, metadata)
-end
+-- ─── Inventory adapter (ox_inventory or qb-inventory) ────────────────────────
+local addItem, removeItem, countItem, canCarry, getContractItemMetadata
 
-local function removeItem(src, item, count)
-    return exports.ox_inventory:RemoveItem(src, item, count)
-end
-
-local function countItem(src, item)
-    return exports.ox_inventory:Search(src, 'count', item) or 0
-end
-
-local function canCarry(src, item, count, metadata)
-    return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
-end
-
--- Read the chop_contract item's metadata from the player's inventory.
--- Returns the metadata table, or nil if the item is not found.
-local function getContractItemMetadata(src)
-    local slots = exports.ox_inventory:Search(src, 'slots', Config.Items.chop_contract)
-    if slots and slots[1] then
-        local item = exports.ox_inventory:GetSlot(src, slots[1])
-        if item and item.metadata and item.metadata.vehicles then
-            return item.metadata, slots[1]
-        end
+if Config.Inventory == 'qb-inventory' then
+    addItem = function(src, item, count, metadata)
+        return exports['qb-inventory']:AddItem(src, item, count, nil, metadata)
     end
-    return nil
+    removeItem = function(src, item, count)
+        return exports['qb-inventory']:RemoveItem(src, item, count)
+    end
+    countItem = function(src, item)
+        local found = exports['qb-inventory']:GetItemByName(src, item)
+        return found and found.amount or 0
+    end
+    canCarry = function(src, item, count)
+        return exports['qb-inventory']:CanCarryItem(src, item, count)
+    end
+    getContractItemMetadata = function(src)
+        local item = exports['qb-inventory']:GetItemByName(src, Config.Items.chop_contract)
+        if item and item.info and item.info.vehicles then
+            return item.info, item.slot
+        end
+        return nil
+    end
+else -- ox_inventory (default)
+    addItem = function(src, item, count, metadata)
+        return exports.ox_inventory:AddItem(src, item, count, metadata)
+    end
+    removeItem = function(src, item, count)
+        return exports.ox_inventory:RemoveItem(src, item, count)
+    end
+    countItem = function(src, item)
+        return exports.ox_inventory:Search(src, 'count', item) or 0
+    end
+    canCarry = function(src, item, count, metadata)
+        return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
+    end
+    getContractItemMetadata = function(src)
+        local slots = exports.ox_inventory:Search(src, 'slots', Config.Items.chop_contract)
+        if slots and slots[1] then
+            local found = exports.ox_inventory:GetSlot(src, slots[1])
+            if found and found.metadata and found.metadata.vehicles then
+                return found.metadata, slots[1]
+            end
+        end
+        return nil
+    end
 end
 
 -- Build a human-readable vehicle list for the contract item description.
@@ -92,7 +111,11 @@ local function updateContractItemMetadata(src, metadata)
     local _, slot = getContractItemMetadata(src)
     if slot then
         metadata.description = buildContractDescription(metadata.vehicles, metadata.completed)
-        exports.ox_inventory:SetMetadata(src, slot, metadata)
+        if Config.Inventory == 'qb-inventory' then
+            exports['qb-inventory']:SetMetadata(src, slot, metadata)
+        else
+            exports.ox_inventory:SetMetadata(src, slot, metadata)
+        end
     elseif Config.Debug then
         print(('[chopshop] updateContractItemMetadata: %s not found for source %s'):format(Config.Items.chop_contract, src))
     end
@@ -395,7 +418,7 @@ end)
 -- When a player uses the chop_contract item, restore their active contract from
 -- the item metadata (handles the case where the server state was lost on crash).
 
-exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, function(src)
+local function handleContractItemUse(src)
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
@@ -432,7 +455,13 @@ exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, function(src
         completed = contract.completed
     })
     notify(src, t('contract_restored'), 'success')
-end)
+end
+
+if Config.Inventory == 'qb-inventory' then
+    QBCore.Functions.CreateUseableItem(Config.Items.chop_contract, handleContractItemUse)
+else
+    exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, handleContractItemUse)
+end
 
 -- ─── Cleanup on disconnect ────────────────────────────────────────────────────
 
