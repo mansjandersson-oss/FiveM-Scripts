@@ -15,10 +15,12 @@ local Items = require 'modules.items.server'
 local Inventory = require 'modules.inventory.server'
 
 do
-	-- Wrap AddItem to enforce per-item stack limits (stackLimit property).
-	-- When an item definition includes `stackLimit = N`, each inventory slot
-	-- may hold at most N of that item.  Excess items overflow into additional
-	-- slots automatically.
+	-- Wrap AddItem to enforce per-item stack limits encoded in the `stack` field.
+	--
+	-- `stack = true`  – infinite stacking (default ox_inventory behaviour, no limit).
+	-- `stack = false` – no stacking; one item per slot (original behaviour unchanged).
+	-- `stack = N`     – at most N items per slot; excess items overflow into new slots.
+	--
 	-- Store reference to the original AddItem before replacing it.
 	local originalAddItem = Inventory.AddItem
 
@@ -32,11 +34,13 @@ do
 	Inventory.AddItem = function(inv, item, count, metadata, slot, cb)
 		if type(item) ~= 'table' then item = Items(item) end
 
-		-- Delegate to the original when stackLimit is absent or item is non-stackable
-		-- (stack = false means one item per slot, so stackLimit is irrelevant).
-		if not item or not item.stackLimit or not item.stack then
+		-- Only intercept when `stack` is a positive integer; all other values
+		-- (true = unlimited, false = no stack) are handled by the original code.
+		if not item or type(item.stack) ~= 'number' then
 			return originalAddItem(inv, item, count, metadata, slot, cb)
 		end
+
+		local stackLimit = item.stack
 
 		inv = Inventory(inv)
 
@@ -54,13 +58,13 @@ do
 		for i = 1, inv.slots do
 			local slotData = inv.items[i]
 
-			if slotData and slotData.name == item.name and slotData.count < item.stackLimit then
-				local space = item.stackLimit - slotData.count
+			if slotData and slotData.name == item.name and slotData.count < stackLimit then
+				local space = stackLimit - slotData.count
 				available += space
 				partialSlots[#partialSlots + 1] = { slot = i, space = space }
 			elseif not slotData then
-				available += item.stackLimit
-				emptySlots[#emptySlots + 1] = { slot = i, space = item.stackLimit }
+				available += stackLimit
+				emptySlots[#emptySlots + 1] = { slot = i, space = stackLimit }
 			end
 
 			if available >= count then break end

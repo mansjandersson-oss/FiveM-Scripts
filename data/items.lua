@@ -1,25 +1,23 @@
 -- Item definitions for ox_inventory.
 --
--- Each entry may contain any of the standard ox_inventory fields.
--- A custom `stackLimit` field (added by this fork) controls the maximum
--- number of items that can occupy a single inventory slot.  When omitted
--- the slot is unlimited (default ox_inventory behaviour).
+-- The `stack` field controls stacking behaviour per item:
 --
--- Example:
+--   stack = true   – unlimited stacking per slot (default when omitted).
+--   stack = false  – no stacking; each item occupies its own slot.
+--   stack = N      – at most N items per slot; excess items overflow into
+--                    additional slots automatically.
 --
---   ['bandage'] = {
---       label      = 'Bandage',
---       weight     = 115,
---       stackLimit = 20,   -- at most 20 bandages per slot
---   },
+-- Examples:
 --
--- Items without `stackLimit` (or with `stack = false`) are unaffected.
+--   ['bandage'] = { label='Bandage', weight=115, stack=20 }   -- max 20/slot
+--   ['parachute'] = { label='Parachute', stack=false }        -- one per slot
+--   ['money']    = { label='Money' }                          -- unlimited (default)
 
 return {
 	['bandage'] = {
 		label = 'Bandage',
 		weight = 115,
-		stackLimit = 20,
+		stack = 20,
 		client = {
 			anim = { dict = 'missheistdockssetup1clipboard@idle_a', clip = 'idle_a', flag = 49 },
 			prop = { model = `prop_rolled_sock_02`, pos = vec3(-0.14, -0.14, -0.08), rot = vec3(-50.0, -50.0, 0.0) },
@@ -35,7 +33,7 @@ return {
 	['burger'] = {
 		label = 'Burger',
 		weight = 220,
-		stackLimit = 5,
+		stack = 5,
 		client = {
 			status = { hunger = 200000 },
 			anim = 'eating',
@@ -48,7 +46,7 @@ return {
 	['sprunk'] = {
 		label = 'Sprunk',
 		weight = 350,
-		stackLimit = 10,
+		stack = 10,
 		client = {
 			status = { thirst = 200000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -94,7 +92,7 @@ return {
 	['lockpick'] = {
 		label = 'Lockpick',
 		weight = 160,
-		stackLimit = 10,
+		stack = 10,
 	},
 
 	['phone'] = {
@@ -124,7 +122,7 @@ return {
 	['mustard'] = {
 		label = 'Mustard',
 		weight = 500,
-		stackLimit = 5,
+		stack = 5,
 		client = {
 			status = { hunger = 25000, thirst = 25000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -137,7 +135,7 @@ return {
 	['water'] = {
 		label = 'Water',
 		weight = 500,
-		stackLimit = 10,
+		stack = 10,
 		client = {
 			status = { thirst = 200000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -182,6 +180,6 @@ return {
 	['scrapmetal'] = {
 		label = 'Scrap Metal',
 		weight = 80,
-		stackLimit = 50,
+		stack = 50,
 	},
 }
