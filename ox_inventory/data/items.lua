@@ -1,61 +1,23 @@
-return {
-	['testburger'] = {
-		label = 'Test Burger',
-		weight = 220,
-		degrade = 60,
-		client = {
-			image = 'burger_chicken.png',
-			status = { hunger = 200000 },
-			anim = 'eating',
-			prop = 'burger',
-			usetime = 2500,
-			export = 'ox_inventory_examples.testburger'
-		},
-		server = {
-			export = 'ox_inventory_examples.testburger',
-			test = 'what an amazingly delicious burger, amirite?'
-		},
-		buttons = {
-			{
-				label = 'Lick it',
-				action = function(slot)
-					print('You licked the burger')
-				end
-			},
-			{
-				label = 'Squeeze it',
-				action = function(slot)
-					print('You squeezed the burger :(')
-				end
-			},
-			{
-				label = 'What do you call a vegan burger?',
-				group = 'Hamburger Puns',
-				action = function(slot)
-					print('A misteak.')
-				end
-			},
-			{
-				label = 'What do frogs like to eat with their hamburgers?',
-				group = 'Hamburger Puns',
-				action = function(slot)
-					print('French flies.')
-				end
-			},
-			{
-				label = 'Why were the burger and fries running?',
-				group = 'Hamburger Puns',
-				action = function(slot)
-					print('Because they\'re fast food.')
-				end
-			}
-		},
-		consume = 0.3
-	},
+-- Item definitions for ox_inventory.
+--
+-- The `stack` field controls stacking behaviour per item:
+--
+--   stack = true   – unlimited stacking per slot (default when omitted).
+--   stack = false  – no stacking; each item occupies its own slot.
+--   stack = N      – at most N items per slot; excess items overflow into
+--                    additional slots automatically.
+--
+-- Examples:
+--
+--   ['bandage'] = { label='Bandage', weight=115, stack=20 }   -- max 20/slot
+--   ['parachute'] = { label='Parachute', stack=false }        -- one per slot
+--   ['money']    = { label='Money' }                          -- unlimited (default)
 
+return {
 	['bandage'] = {
 		label = 'Bandage',
 		weight = 115,
+		stack = 20,
 		client = {
 			anim = { dict = 'missheistdockssetup1clipboard@idle_a', clip = 'idle_a', flag = 49 },
 			prop = { model = `prop_rolled_sock_02`, pos = vec3(-0.14, -0.14, -0.08), rot = vec3(-50.0, -50.0, 0.0) },
@@ -71,6 +33,7 @@ return {
 	['burger'] = {
 		label = 'Burger',
 		weight = 220,
+		stack = 5,
 		client = {
 			status = { hunger = 200000 },
 			anim = 'eating',
@@ -83,6 +46,7 @@ return {
 	['sprunk'] = {
 		label = 'Sprunk',
 		weight = 350,
+		stack = 10,
 		client = {
 			status = { thirst = 200000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -104,14 +68,6 @@ return {
 
 	['garbage'] = {
 		label = 'Garbage',
-	},
-
-	['paperbag'] = {
-		label = 'Paper Bag',
-		weight = 1,
-		stack = false,
-		close = false,
-		consume = 0
 	},
 
 	['identification'] = {
@@ -136,6 +92,7 @@ return {
 	['lockpick'] = {
 		label = 'Lockpick',
 		weight = 160,
+		stack = 10,
 	},
 
 	['phone'] = {
@@ -165,6 +122,7 @@ return {
 	['mustard'] = {
 		label = 'Mustard',
 		weight = 500,
+		stack = 5,
 		client = {
 			status = { hunger = 25000, thirst = 25000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -177,6 +135,7 @@ return {
 	['water'] = {
 		label = 'Water',
 		weight = 500,
+		stack = 10,
 		client = {
 			status = { thirst = 200000 },
 			anim = { dict = 'mp_player_intdrink', clip = 'loop_bottle' },
@@ -221,5 +180,6 @@ return {
 	['scrapmetal'] = {
 		label = 'Scrap Metal',
 		weight = 80,
+		stack = 50,
 	},
 }
