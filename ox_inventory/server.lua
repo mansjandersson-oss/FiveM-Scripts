@@ -14,6 +14,99 @@ local db = require 'modules.mysql.server'
 local Items = require 'modules.items.server'
 local Inventory = require 'modules.inventory.server'
 
+do
+	-- Wrap AddItem to enforce per-item stack limits encoded in the `stack` field.
+	--
+	-- `stack = true`  – infinite stacking (default ox_inventory behaviour, no limit).
+	-- `stack = false` – no stacking; one item per slot (original behaviour unchanged).
+	-- `stack = N`     – at most N items per slot; excess items overflow into new slots.
+	--
+	-- Store reference to the original AddItem before replacing it.
+	local originalAddItem = Inventory.AddItem
+
+	---@param inv inventory
+	---@param item table | string
+	---@param count number
+	---@param metadata? table | string
+	---@param slot? number
+	---@param cb? fun(success?: boolean, response: string|SlotWithItem|nil)
+	---@return boolean? success, string|SlotWithItem|nil response
+	Inventory.AddItem = function(inv, item, count, metadata, slot, cb)
+		if type(item) ~= 'table' then item = Items(item) end
+
+		-- Only intercept when `stack` is a positive integer; all other values
+		-- (true = unlimited, false = no stack) are handled by the original code.
+		if not item or type(item.stack) ~= 'number' then
+			return originalAddItem(inv, item, count, metadata, slot, cb)
+		end
+
+		local stackLimit = item.stack
+
+		inv = Inventory(inv)
+
+		if not inv then
+			if cb then return cb(false, 'invalid_inventory') end
+			return false, 'invalid_inventory'
+		end
+
+		-- Pre-flight: collect slots that have available space, honouring stackLimit.
+		-- Partial stacks of the same item are preferred over empty slots.
+		local available = 0
+		local partialSlots = {}
+		local emptySlots = {}
+
+		for i = 1, inv.slots do
+			local slotData = inv.items[i]
+
+			if slotData and slotData.name == item.name and slotData.count < stackLimit then
+				local space = stackLimit - slotData.count
+				available += space
+				partialSlots[#partialSlots + 1] = { slot = i, space = space }
+			elseif not slotData then
+				available += stackLimit
+				emptySlots[#emptySlots + 1] = { slot = i, space = stackLimit }
+			end
+
+			if available >= count then break end
+		end
+
+		if available < count then
+			if cb then return cb(false, 'inventory_full') end
+			return false, 'inventory_full'
+		end
+
+		-- Fill slots in order: partial stacks first, then empty slots.
+		local slotsToFill = {}
+		for i = 1, #partialSlots do slotsToFill[#slotsToFill + 1] = partialSlots[i] end
+		for i = 1, #emptySlots do slotsToFill[#slotsToFill + 1] = emptySlots[i] end
+
+		local remaining = count
+		local success = false
+		local lastResponse
+
+		for _, slotInfo in ipairs(slotsToFill) do
+			if remaining <= 0 then break end
+
+			local toAdd = math.min(remaining, slotInfo.space)
+			local ok, response = originalAddItem(inv, item, toAdd, metadata, slotInfo.slot)
+
+			if ok then
+				success = true
+				lastResponse = response
+				remaining -= toAdd
+			else
+				break
+			end
+		end
+
+		if cb then return cb(success, lastResponse) end
+		return success, lastResponse
+	end
+
+	-- Re-export so external resources also get the updated function.
+	exports('AddItem', Inventory.AddItem)
+end
+
 ---@param player table
 ---@param data table?
 --- player requires source, identifier, and name
