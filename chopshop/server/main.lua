@@ -60,7 +60,14 @@ if Config.Inventory == 'qb-inventory' then
         return found and found.amount or 0
     end
     canCarry = function(src, item, count)
-        return exports['qb-inventory']:CanCarryItem(src, item, count)
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return false end
+        local itemData = QBCore.Shared.Items[item]
+        if not itemData then return true end
+        local addWeight     = (itemData.weight or 0) * count
+        local currentWeight = Player.PlayerData.metadata['currentweight'] or 0
+        local maxWeight     = Player.PlayerData.metadata['maxweight'] or 120000
+        return (currentWeight + addWeight) <= maxWeight
     end
     getContractItemMetadata = function(src)
         local item = exports['qb-inventory']:GetItemByName(src, Config.Items.chop_contract)
