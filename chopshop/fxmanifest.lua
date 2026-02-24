@@ -24,7 +24,8 @@ server_scripts {
 
 dependencies {
     'qb-core',
-    'ox_inventory',
     'ox_target',
-    'ox_lib'
+    'ox_lib',
+    -- Inventory: ensure either 'ox_inventory' or 'qb-inventory' is started
+    -- depending on the value of Config.Inventory in config.lua
 }
