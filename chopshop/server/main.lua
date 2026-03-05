@@ -1,16 +1,16 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
--- ─── Server-side state ────────────────────────────────────────────────────────
+-- ─── Serverstatus ───────────────────────────────────────────────────────────
 -- contracts[src]    = { vehicles = [{model, label}], completed = {model = true} }
 -- civilianJobs[src] = { active = bool, vehicleNetId = int }
 local contracts    = {}
 local civilianJobs = {}
 
--- Separate cooldown buckets (seconds timestamps)
+-- Separata cooldown-buckets (sekundstidsstämplar)
 local contractCooldowns = {}
 local civilCooldowns    = {}
 
--- ─── Utility ──────────────────────────────────────────────────────────────────
+-- ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
 
 local function t(key, ...)
     local lang = Locales[Config.Locale] or Locales.en
@@ -35,8 +35,8 @@ local function getPoliceCount()
     return count
 end
 
--- Returns (true, secondsRemaining) if player is on cooldown, otherwise sets the
--- cooldown and returns (false, 0).
+-- Returnerar (true, sekunderKvar) om spelaren har cooldown, annars sätts den
+-- och funktionen returnerar (false, 0).
 local function hasCooldown(bucket, src, seconds)
     local now    = os.time()
     local expiry = bucket[src] or 0
@@ -45,7 +45,7 @@ local function hasCooldown(bucket, src, seconds)
     return false, 0
 end
 
--- ─── Inventory adapter (ox_inventory or qb-inventory) ────────────────────────
+-- ─── Inventory-adapter (ox_inventory eller qb-inventory) ─────────────────────
 local addItem, removeItem, countItem, canCarry, getContractItemMetadata
 
 if Config.Inventory == 'qb-inventory' then
@@ -76,7 +76,7 @@ if Config.Inventory == 'qb-inventory' then
         end
         return nil
     end
-else -- ox_inventory (default)
+else -- ox_inventory (standard)
     addItem = function(src, item, count, metadata)
         return exports.ox_inventory:AddItem(src, item, count, metadata)
     end
@@ -101,8 +101,8 @@ else -- ox_inventory (default)
     end
 end
 
--- Build a human-readable vehicle list for the contract item description.
--- Completed vehicles are removed from the list so only remaining targets are shown.
+-- Bygg en läsbar fordonslista för kontrakt-itemets beskrivning.
+-- Klara fordon tas bort från listan så bara återstående mål visas.
 local function buildContractDescription(vehicles, completed)
     local lines, idx = {}, 1
 
@@ -120,8 +120,8 @@ local function buildContractDescription(vehicles, completed)
     return table.concat(lines, '\n')
 end
 
--- Update the chop_contract item's metadata to reflect the latest contract state.
--- Used to keep item metadata in sync so crash recovery restores the correct progress.
+-- Uppdatera chop_contract-itemets metadata med senaste kontraktsstatus.
+-- Håller metadata synkad så återställning efter krasch ger rätt progress.
 local function updateContractItemMetadata(src, metadata)
     local _, slot = getContractItemMetadata(src)
     if slot then
@@ -136,8 +136,8 @@ local function updateContractItemMetadata(src, metadata)
     end
 end
 
--- Roll each material independently using its own drop chance.
--- Silently skips any material the player cannot carry.
+-- Slå varje material separat utifrån dess egen drop-chans.
+-- Hoppar tyst över material spelaren inte kan bära.
 local function giveRandomMaterials(src)
     for _, m in ipairs(Config.MaterialRewards) do
         if math.random(100) <= m.chance then
@@ -149,13 +149,13 @@ local function giveRandomMaterials(src)
     end
 end
 
--- Build a randomised contract (no duplicate models)
+-- Bygg ett slumpat kontrakt (inga dubblettmodeller)
 local function buildContract()
     local pool = {}
     for _, v in ipairs(Config.ContractVehicles) do
         pool[#pool + 1] = v
     end
-    -- Fisher-Yates shuffle
+    -- Fisher-Yates-blandning
     for i = #pool, 2, -1 do
         local j = math.random(i)
         pool[i], pool[j] = pool[j], pool[i]
@@ -167,7 +167,7 @@ local function buildContract()
     return vehicles
 end
 
--- Validate that a partName/partItem pair is legitimate (server-side check)
+-- Validera att partName/partItem-kombinationen är giltig (serverside)
 local function isValidPart(partName, partItem)
     for _, part in ipairs(Config.StripParts) do
         if part.name == partName and part.item == partItem then
@@ -177,7 +177,7 @@ local function isValidPart(partName, partItem)
     return false
 end
 
--- ─── Criminal contract ────────────────────────────────────────────────────────
+-- ─── Kriminellt kontrakt ─────────────────────────────────────────────────────
 
 RegisterNetEvent('chopshop:server:GetContract', function()
     local src    = source
@@ -189,7 +189,7 @@ RegisterNetEvent('chopshop:server:GetContract', function()
         return
     end
 
-    -- Reject if an unfinished contract already exists (server state or item in inventory)
+    -- Avvisa om ett ofärdigt kontrakt redan finns (serverstate eller item i inventory)
     local existing = contracts[src]
     if existing and existing.vehicles then
         for _, v in ipairs(existing.vehicles) do
@@ -199,7 +199,7 @@ RegisterNetEvent('chopshop:server:GetContract', function()
             end
         end
     elseif countItem(src, Config.Items.chop_contract) > 0 then
-        -- Player crashed mid-contract; item still in inventory — tell them to use it
+        -- Spelaren kraschade mitt i kontraktet; item finns kvar i inventory — be dem använda det
         notify(src, t('contract_use_item_to_restore'), 'error')
         return
     end
@@ -213,7 +213,7 @@ RegisterNetEvent('chopshop:server:GetContract', function()
     local vehicles = buildContract()
     contracts[src] = { vehicles = vehicles, completed = {} }
 
-    -- Give the player a physical contract item they can use to restore progress after a crash
+    -- Ge spelaren ett fysiskt kontraktsitem som kan återställa progress efter krasch
     addItem(src, Config.Items.chop_contract, 1, {
         vehicles    = vehicles,
         completed   = {},
@@ -268,8 +268,8 @@ RegisterNetEvent('chopshop:server:TurnInContract', function()
     notify(src, t('contract_turned_in', reward), 'success')
 end)
 
--- Called when the player arrives at the chop zone with a vehicle.
--- Notifies the client if the model matches a pending contract entry.
+-- Anropas när spelaren kommer till chop-zonen med ett fordon.
+-- Notifierar klienten om modellen matchar ett väntande kontraktsmål.
 RegisterNetEvent('chopshop:server:CheckContractVehicle', function(modelName)
     local src      = source
     local contract = contracts[src]
@@ -285,7 +285,7 @@ RegisterNetEvent('chopshop:server:CheckContractVehicle', function(modelName)
     end
 end)
 
--- ─── Civilian job ─────────────────────────────────────────────────────────────
+-- ─── Civilt jobb ─────────────────────────────────────────────────────────────
 
 RegisterNetEvent('chopshop:server:RequestCivilianVehicle', function()
     local src    = source
@@ -311,7 +311,7 @@ RegisterNetEvent('chopshop:server:RequestCivilianVehicle', function()
     notify(src, t('civil_vehicle_incoming', vehicleData.label), 'inform')
 end)
 
--- Client reports back the network ID after spawning the vehicle
+-- Klienten rapporterar tillbaka nätverks-ID efter fordonsspawn
 RegisterNetEvent('chopshop:server:RegisterCivilianVehicle', function(netId)
     local src = source
     local job = civilianJobs[src]
@@ -367,14 +367,14 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     notify(src, t('civil_parts_turned_in', totalMaterials, reward), 'success')
 end)
 
--- ─── Strip events ─────────────────────────────────────────────────────────────
+-- ─── Demonteringshändelser ───────────────────────────────────────────────────
 
 RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem)
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
-    -- Server-side validation: only accept known part name + item combos
+    -- Serverside-validering: acceptera endast kända part name + item-kombinationer
     if not isValidPart(partName, partItem) then
         notify(src, t('invalid_part'), 'error')
         return
@@ -403,7 +403,7 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     local job     = civilianJobs[src]
     local isCivil = job and job.active
 
-    -- Give scrap / auto_parts for the frame
+    -- Ge skrot / auto_parts för ramen
     local scrapCount = math.random(Config.FrameStrip.scrapCount.min, Config.FrameStrip.scrapCount.max)
     local scrapItem  = isCivil and Config.Items.auto_parts or Config.FrameStrip.scrapItem
 
@@ -414,20 +414,20 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     end
 
     if isCivil then
-        -- Give the frame bonus as money item + random materials
+        -- Ge rambonus som pengar-item + slumpmässiga material
         local bonus = math.random(Config.Civilian.frameBonus.min, Config.Civilian.frameBonus.max)
         addItem(src, Config.Items.money, bonus)
         giveRandomMaterials(src)
         job.active = false
         notify(src, t('civil_frame_stripped', bonus), 'success')
     else
-        -- Update criminal contract if applicable
+        -- Uppdatera kriminellt kontrakt om tillämpligt
         local contract = contracts[src]
         if contract and contract.vehicles then
             for _, v in ipairs(contract.vehicles) do
                 if v.model:lower() == modelName:lower() and not contract.completed[v.model] then
                     contract.completed[v.model] = true
-                    -- Keep the contract item metadata in sync for crash recovery
+                    -- Håll kontrakt-itemets metadata synkad för återställning efter krasch
                     updateContractItemMetadata(src, { vehicles = contract.vehicles, completed = contract.completed })
 
                     local remaining = 0
@@ -450,9 +450,9 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     end
 end)
 
--- ─── Contract item: crash recovery ───────────────────────────────────────────
--- When a player uses the chop_contract item, restore their active contract from
--- the item metadata (handles the case where the server state was lost on crash).
+-- ─── Kontraktsitem: återställning efter krasch ───────────────────────────────
+-- När spelaren använder chop_contract-itemet, återställ aktivt kontrakt från
+-- itemets metadata (hanterar fall där serverstate förlorats vid krasch).
 
 local function handleContractItemUse(src)
     local player = QBCore.Functions.GetPlayer(src)
@@ -461,7 +461,7 @@ local function handleContractItemUse(src)
     local contract = contracts[src]
 
     if contract and contract.vehicles then
-        -- Contract is still active in server state — just display it
+        -- Kontraktet är fortfarande aktivt i serverstate — visa det bara
         TriggerClientEvent('chopshop:client:ShowContract', src, {
             vehicles  = contract.vehicles,
             completed = contract.completed
@@ -470,7 +470,7 @@ local function handleContractItemUse(src)
         return
     end
 
-    -- Server state lost (e.g. after a crash) – restore from item metadata
+    -- Serverstate förlorad (t.ex. efter krasch) – återställ från item-metadata
     local meta = getContractItemMetadata(src)
     if meta then
         contracts[src] = {
@@ -499,7 +499,7 @@ else
     exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, handleContractItemUse)
 end
 
--- ─── Cleanup on disconnect ────────────────────────────────────────────────────
+-- ─── Städning vid frånkoppling ───────────────────────────────────────────────
 
 AddEventHandler('playerDropped', function()
     local src = source

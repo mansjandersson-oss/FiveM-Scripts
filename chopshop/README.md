@@ -1,159 +1,160 @@
 # Chop Shop
 
-A FiveM resource that adds an immersive chop-shop experience for both **criminals** and **civilians**, built on top of QBCore, OX-Inventory, OX-Target and OX-Lib.
+En FiveM-resurs som lägger till en immersiv chop shop-upplevelse för både **kriminella** och **civila**, byggd på QBCore, OX-Inventory, OX-Target och OX-Lib.
 
-## Features
+## Funktioner
 
-### 🔴 Criminal Route
-1. Talk to the **Shady Contact** NPC to receive a contract for **3 vehicles**.
-2. A **Contract** item is added to your inventory — check it with `view contract` at the NPC, or use it after a crash to restore your progress.
-3. The contract lists the vehicle models to find — they are already roaming the city (no map blips).
-4. Find any vehicle matching a contract model on the streets, steal it and drive it to the **Chop Zone**.
-5. Park and exit the vehicle inside the zone, then use **OX-Target** to strip each part:
-   - Driver Door
-   - Passenger Door
-   - Hood
-   - Trunk Lid
-6. Once all parts are removed, the **Strip Frame** option appears — complete it to despawn the vehicle.
-7. The contact NPC tracks your progress after each vehicle is finished.
-8. If you crash mid-contract, **use the Contract item** in your inventory to restore your progress.
-9. Return to the NPC when all vehicles are done and **Turn In** the contract for a cash reward (the item is removed automatically).
+### 🔴 Kriminell väg
+1. Prata med NPC:n **Skum Kontakt** för att få ett kontrakt på **3 fordon**.
+2. Ett **Kontrakt**-item läggs i ditt inventory — kontrollera status via `visa kontrakt` hos NPC:n, eller använd itemet efter en krasch för att återställa progression.
+3. Kontraktet listar fordonsmodellerna du ska hitta — de kör redan runt i staden (inga kartblips).
+4. Hitta ett fordon som matchar kontraktet, stjäl det och kör till **Chop-zonen**.
+5. Parkera och gå ur fordonet i zonen, använd sedan **OX-Target** för att demontera delar:
+   - Förardörr
+   - Passagerardörr
+   - Vänster bakdörr (på 4-dörrars)
+   - Höger bakdörr (på 4-dörrars)
+   - Motorhuv
+   - Bagagelucka
+6. När alla relevanta delar är demonterade visas valet **Demontera ram** — slutför det för att despawna fordonet.
+7. Kontakt-NPC:n spårar progression efter varje slutfört kontraktsfordon.
+8. Om du kraschar mitt i kontraktet kan du **använda kontraktsitemet** för att återställa progression.
+9. När alla fordon är klara, återvänd till NPC:n och **Lämna in** kontraktet för betalning.
 
-### 🔵 Civilian Route
-1. Talk to the **Auto Dismantler** NPC to receive a random vehicle to dismantle.
-2. The vehicle spawns near the NPC — drive it to the **Chop Zone**.
-3. Strip all parts (same process as criminal). Each part gives `auto_parts` items instead of the individual part items.
-4. Stripping the frame awards a small bonus cash payment automatically.
-5. Return to the NPC and **Turn In Auto Parts** to exchange them for cash.
+### 🔵 Civil väg
+1. Prata med **Bilskrotare** NPC för att få ett slumpmässigt fordon att demontera.
+2. Fordonet spawnar nära NPC:n — kör det till **Chop-zonen**.
+3. Demontera delar på samma sätt som den kriminella vägen.
+4. Ramen ger en mindre bonusbetalning automatiskt.
+5. Lämna in material hos NPC:n för att få pengar.
 
-## Skill Checks & Animations
-- Every strip action requires a **lib.skillCheck** minigame (difficulty increases for the final frame strip).
-- Animated progress bars play during each action using `lib.progressCircle`.
+## Skill checks & animationer
+- Varje demonteringssteg kräver ett **lib.skillCheck**-minispel (svårare på sista ramsteget).
+- Animerade progress-cirklar visas under varje handling via `lib.progressCircle`.
 
-## Dependencies
-| Resource | Purpose |
+## Beroenden
+| Resource | Syfte |
 |---|---|
-| `qb-core` | Player data, money functions |
-| `ox_inventory` | Item management |
-| `ox_target` | NPC & vehicle interaction |
-| `ox_lib` | Notifications, progress circles, skill checks, zones |
+| `qb-core` | Spelardata, pengafunktioner |
+| `ox_inventory` | Itemhantering |
+| `ox_target` | NPC- och fordonsinteraktion |
+| `ox_lib` | Notifieringar, progress-cirklar, skill checks, zoner |
 
-## OX Inventory Items
-Add the following items to your OX Inventory `items.lua`:
+## OX Inventory-items
+Lägg till följande items i OX Inventory `items.lua`:
 
 ```lua
 ['car_door'] = {
-    label = 'Car Door',
+    label = 'Bildörr',
     weight = 8000,
     stack = true,
     close = true,
 },
 ['car_hood'] = {
-    label = 'Car Hood',
+    label = 'Motorhuv',
     weight = 6000,
     stack = true,
     close = true,
 },
 ['car_trunk_lid'] = {
-    label = 'Trunk Lid',
+    label = 'Bagagelucka',
     weight = 5000,
     stack = true,
     close = true,
 },
 ['scrap_metal'] = {
-    label = 'Scrap Metal',
+    label = 'Skrotmetall',
     weight = 3000,
     stack = true,
     close = true,
 },
 ['auto_parts'] = {
-    label = 'Auto Parts',
+    label = 'Bildelar',
     weight = 2000,
     stack = true,
     close = true,
 },
 ['chop_contract'] = {
-    label = 'Vehicle Contract',
+    label = 'Fordonskontrakt',
     weight = 100,
     stack = false,
     close = true,
 },
--- Payment item (name must match Config.Items.money)
-['black_money'] = {
-    label = 'Black Money',
+-- Betalningsitem (namn måste matcha Config.Items.money)
+['money'] = {
+    label = 'Pengar',
     weight = 500,
     stack = true,
     close = true,
 },
--- Vehicle material rewards (add any you don't already have)
+-- Materialbelöningar från fordon
 ['rubber'] = {
-    label = 'Rubber',
+    label = 'Gummi',
     weight = 300,
     stack = true,
     close = true,
 },
 ['steel'] = {
-    label = 'Steel',
+    label = 'Stål',
     weight = 2000,
     stack = true,
     close = true,
 },
 ['aluminum'] = {
-    label = 'Aluminum',
+    label = 'Aluminium',
     weight = 1500,
     stack = true,
     close = true,
 },
 ['copper'] = {
-    label = 'Copper',
+    label = 'Koppar',
     weight = 1000,
     stack = true,
     close = true,
 },
 ['plastic'] = {
-    label = 'Plastic',
+    label = 'Plast',
     weight = 400,
     stack = true,
     close = true,
 },
 ['glass'] = {
-    label = 'Glass',
+    label = 'Glas',
     weight = 800,
     stack = true,
     close = true,
 },
 ```
 
-## Configuration
+## Konfiguration
 
-All tuneable values are in `config.lua`:
+Alla justerbara värden finns i `config.lua`:
 
-| Section | Key | Description |
+| Sektion | Nyckel | Beskrivning |
 |---|---|---|
-| `Config.Criminal` | `vehicleCount` | Number of vehicles per contract (default 3) |
-| `Config.Criminal` | `cooldown` | Seconds between new contracts (default 1800) |
-| `Config.Criminal` | `minReward` / `maxReward` | Money-item count range paid on contract turn-in |
-| `Config.Criminal` | `policeRequired` | Minimum police online to get a contract |
-| `Config.Civilian` | `cooldown` | Seconds between civilian jobs (default 600) |
-| `Config.Civilian` | `rewardPerPart` | Money-item count per `auto_parts` item turned in |
-| `Config.Civilian` | `frameBonus` | Money-item count bonus for completing the frame strip |
-| `Config.Items` | `money` | Item name used as payment (e.g. `'black_money'`) |
-| `Config.Items` | `chop_contract` | Item given to the player when a contract is issued (used for crash recovery) |
-| `Config.MaterialRewards` | — | Pool of vehicle materials that can be awarded randomly |
-| `Config.MaterialRewardCount` | `min` / `max` | How many different materials to pick per reward event |
-| `Config.NPCs` | — | Coords and ped models for both NPCs |
-| `Config.ChopZone` | — | Location, size and rotation of the chop area |
-| `Config.ContractVehicles` | — | Pool of vehicle models for criminal contracts |
-| `Config.ContractSpawnPoints` | — | Map positions where contract vehicles spawn |
-| `Config.CivilianVehicles` | — | Pool of vehicles handed out to civilians |
-| `Config.StripParts` | — | Parts, items, durations and icons |
-| `Config.Minigames` | — | Skill-check difficulty stages and keys |
+| `Config.Criminal` | `vehicleCount` | Antal fordon per kontrakt (standard 3) |
+| `Config.Criminal` | `cooldown` | Sekunder mellan nya kontrakt (standard 1800) |
+| `Config.Criminal` | `minReward` / `maxReward` | Intervall för antal pengar-item vid kontraktsinlämning |
+| `Config.Criminal` | `policeRequired` | Minsta antal poliser online för att få kontrakt |
+| `Config.Civilian` | `cooldown` | Sekunder mellan civila jobb (standard 600) |
+| `Config.Civilian` | `rewardPerPart` | Antal pengar-item per sålt material-item |
+| `Config.Civilian` | `frameBonus` | Bonus i pengar-item för slutförd ramdemontering |
+| `Config.Civilian` | `sellableParts` | Materialitems som kan säljas hos civil NPC |
+| `Config.Items` | `money` | Itemnamn som används som betalning (nu `'money'`) |
+| `Config.Items` | `chop_contract` | Item som ges när kontrakt utfärdas (återställning efter krasch) |
+| `Config.MaterialRewards` | — | Pool av fordonsmaterial som kan delas ut slumpmässigt |
+| `Config.NPCs` | — | Koordinater och pedmodeller för båda NPC:er |
+| `Config.ChopZone` | — | Position, storlek och rotation för chop-zonen |
+| `Config.ContractVehicles` | — | Pool med fordonsmodeller för kriminella kontrakt |
+| `Config.CivilianVehicles` | — | Pool med fordon för civila jobb |
+| `Config.StripParts` | — | Delar, items, tider och ikoner |
+| `Config.Minigames` | — | Svårighetsnivåer och tangenter för skill checks |
 
-## Locales
-English (`en`) and Swedish (`sv`) are included. Add new locales in `locales/locale.lua` following the existing pattern.
+## Språk
+Svenska (`sv`) och engelska (`en`) finns inkluderat. Standardspråk är svenska via `Config.Locale = 'sv'`.
 
 ## Installation
-1. Drop the `chopshop` folder into your `resources` directory.
-2. Add `ensure chopshop` to your `server.cfg` **after** `qb-core`, `ox_inventory`, `ox_target` and `ox_lib`.
-3. Add the items listed above to your OX Inventory configuration.
-4. Adjust coordinates and reward values in `config.lua` for your server.
+1. Lägg mappen `chopshop` i din `resources`-katalog.
+2. Lägg till `ensure chopshop` i `server.cfg` **efter** `qb-core`, `ox_inventory`, `ox_target` och `ox_lib`.
+3. Lägg till items ovan i din OX Inventory-konfiguration.
+4. Justera koordinater, belöningar och övriga värden i `config.lua` efter din server.
