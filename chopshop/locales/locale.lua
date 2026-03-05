@@ -25,6 +25,8 @@ Locales = {
         -- Strip part labels (shown in ox_target)
         strip_driver_door    = 'Strip Driver Door',
         strip_passenger_door = 'Strip Passenger Door',
+        strip_rear_left_door = 'Strip Rear Left Door',
+        strip_rear_right_door = 'Strip Rear Right Door',
         strip_hood           = 'Strip Hood',
         strip_trunk          = 'Strip Trunk Lid',
         strip_frame          = 'Strip Frame (Despawns Vehicle)',
@@ -32,6 +34,8 @@ Locales = {
         -- Part names used in notifications
         part_driver_door    = 'driver door',
         part_passenger_door = 'passenger door',
+        part_rear_left_door = 'rear left door',
+        part_rear_right_door = 'rear right door',
         part_hood           = 'hood',
         part_trunk          = 'trunk lid',
 
@@ -92,12 +96,16 @@ Locales = {
 
         strip_driver_door    = 'Demontera förardörr',
         strip_passenger_door = 'Demontera passagerardörr',
+        strip_rear_left_door = 'Demontera vänster bakdörr',
+        strip_rear_right_door = 'Demontera höger bakdörr',
         strip_hood           = 'Demontera motorhuv',
         strip_trunk          = 'Demontera bagagelucka',
         strip_frame          = 'Demontera ram (tar bort fordon)',
 
         part_driver_door    = 'förardörr',
         part_passenger_door = 'passagerardörr',
+        part_rear_left_door = 'vänster bakdörr',
+        part_rear_right_door = 'höger bakdörr',
         part_hood           = 'motorhuv',
         part_trunk          = 'bagagelucka',
 
