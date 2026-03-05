@@ -18,8 +18,10 @@ Config.Criminal = {
 -- ─── Civilian job settings ────────────────────────────────────────────────────
 Config.Civilian = {
     cooldown      = 600,                         -- seconds between jobs
-    rewardPerPart = { min = 1, max = 3   },      -- money-item count per auto_part turned in
+    rewardPerPart = { min = 1, max = 3   },      -- money-item count per sold vehicle part
     frameBonus    = { min = 5, max = 15  },      -- money-item count bonus for stripping the frame
+    -- Items that can be sold to the civilian dismantler (lets criminals sell stripped parts too)
+    sellableParts = { 'auto_parts', 'car_door', 'car_hood', 'car_trunk_lid', 'scrap_metal' },
 }
 
 -- ─── NPC definitions ──────────────────────────────────────────────────────────
@@ -93,6 +95,8 @@ Config.CivilianVehicleSpawn = vec4(-356.05, -130.21, 38.31, 248.31)
 Config.StripParts = {
     { name = 'driver_door',    labelKey = 'strip_driver_door',    item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'passenger_door', labelKey = 'strip_passenger_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_left_door',  labelKey = 'strip_rear_left_door',  item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_right_door', labelKey = 'strip_rear_right_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'hood',           labelKey = 'strip_hood',           item = 'car_hood',      duration = 6000, icon = 'fa-solid fa-car'               },
     { name = 'trunk',          labelKey = 'strip_trunk',          item = 'car_trunk_lid', duration = 6000, icon = 'fa-solid fa-box'               },
 }
