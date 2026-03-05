@@ -2,40 +2,44 @@ Locales = {
     en = {
         script_title = 'Chop Shop',
 
-        -- Blip labels
+        -- Blip-etiketter
         blip_criminal_npc = 'Shady Contact',
         blip_civilian_npc = 'Auto Dismantler',
         blip_chop_zone    = 'Chop Zone',
 
-        -- NPC interaction labels
+        -- NPC-interaktionsetiketter
         get_contract       = 'Get Vehicle Contract',
         view_contract      = 'View Active Contract',
         turn_in_contract   = 'Turn In Completed Contract',
         request_vehicle    = 'Request Dismantling Vehicle',
         turn_in_parts      = 'Turn In Auto Parts',
 
-        -- Shared feedback
+        -- Delad feedback
         busy_action       = 'You are already doing something.',
         failed_minigame   = 'You slipped up and failed.',
         action_cancelled  = 'Action cancelled.',
 
-        -- Chop zone
+        -- Chop-zon
         entered_chop_zone = 'Pull the vehicle in, exit it and start stripping.',
 
-        -- Strip part labels (shown in ox_target)
+        -- Etiketter för demonteringsdelar (visas i ox_target)
         strip_driver_door    = 'Strip Driver Door',
         strip_passenger_door = 'Strip Passenger Door',
+        strip_rear_left_door = 'Strip Rear Left Door',
+        strip_rear_right_door = 'Strip Rear Right Door',
         strip_hood           = 'Strip Hood',
         strip_trunk          = 'Strip Trunk Lid',
         strip_frame          = 'Strip Frame (Despawns Vehicle)',
 
-        -- Part names used in notifications
+        -- Delnamn som används i notifieringar
         part_driver_door    = 'driver door',
         part_passenger_door = 'passenger door',
+        part_rear_left_door = 'rear left door',
+        part_rear_right_door = 'rear right door',
         part_hood           = 'hood',
         part_trunk          = 'trunk lid',
 
-        -- Contract status
+        -- Kontraktsstatus
         contract_status_title     = 'Active Contract',
         no_active_contract        = 'You do not have an active contract.',
         contract_already_active   = 'You already have an active contract. Finish it first.',
@@ -50,9 +54,10 @@ Locales = {
         contract_incomplete       = 'Contract is not complete yet.',
         contract_turned_in        = 'Contract fulfilled. Received x%s payment and some materials.',
         contract_restored         = 'Contract restored. Find the vehicles and bring them to the chop zone.',
+        contract_item_complete    = '✓ Contract complete',
         not_enough_police         = 'Not enough police on duty (%s required).',
 
-        -- Civilian job
+        -- Civilt jobb
         civil_job_already_active = 'You already have a vehicle to dismantle.',
         civil_job_cooldown       = 'The dismantler is busy. Try again in %ss.',
         civil_vehicle_incoming   = 'A %s has been brought round for you to dismantle.',
@@ -60,11 +65,11 @@ Locales = {
         civilian_vehicle_ready   = 'A %s is waiting near the shop. Drive it to the chop zone.',
         vehicle_spawn_failed     = 'Could not retrieve the vehicle. Try again.',
         civil_frame_stripped     = 'Frame fully stripped. Received x%s payment and some materials.',
-        no_auto_parts            = 'You have no auto parts to turn in.',
+        no_auto_parts            = 'You have no materials to turn in.',
         remove_parts_failed      = 'Could not remove parts from your inventory.',
-        civil_parts_turned_in    = 'Turned in %s auto part(s). Received x%s payment and some materials.',
+        civil_parts_turned_in    = 'Turned in %s material item(s). Received x%s payment and some materials.',
 
-        -- Strip feedback
+        -- Feedback för demontering
         part_stripped     = 'Stripped: %s.',
         frame_stripped    = 'Frame stripped and vehicle removed.',
         invalid_part      = 'Invalid part.',
@@ -92,12 +97,16 @@ Locales = {
 
         strip_driver_door    = 'Demontera förardörr',
         strip_passenger_door = 'Demontera passagerardörr',
+        strip_rear_left_door = 'Demontera vänster bakdörr',
+        strip_rear_right_door = 'Demontera höger bakdörr',
         strip_hood           = 'Demontera motorhuv',
         strip_trunk          = 'Demontera bagagelucka',
         strip_frame          = 'Demontera ram (tar bort fordon)',
 
         part_driver_door    = 'förardörr',
         part_passenger_door = 'passagerardörr',
+        part_rear_left_door = 'vänster bakdörr',
+        part_rear_right_door = 'höger bakdörr',
         part_hood           = 'motorhuv',
         part_trunk          = 'bagagelucka',
 
@@ -115,6 +124,7 @@ Locales = {
         contract_incomplete       = 'Kontraktet är inte klart ännu.',
         contract_turned_in        = 'Kontrakt fullgjort. Fick x%s betalning och lite material.',
         contract_restored         = 'Kontrakt återställt. Hitta fordonen och kör dem till chopzonen.',
+        contract_item_complete    = '✓ Kontrakt slutfört',
         not_enough_police         = 'Inte tillräckligt med polis i tjänst (%s krävs).',
 
         civil_job_already_active = 'Du har redan ett fordon att demontera.',
@@ -124,9 +134,9 @@ Locales = {
         civilian_vehicle_ready   = 'En %s väntar vid verkstaden. Kör den till chopzonen.',
         vehicle_spawn_failed     = 'Kunde inte hämta fordonet. Försök igen.',
         civil_frame_stripped     = 'Ram helt demonterad. Fick x%s betalning och lite material.',
-        no_auto_parts            = 'Du har inga bildelar att lämna in.',
+        no_auto_parts            = 'Du har inga material att lämna in.',
         remove_parts_failed      = 'Kunde inte ta bort delar från inventariet.',
-        civil_parts_turned_in    = 'Lämnade in %s bildel(ar). Fick x%s betalning och lite material.',
+        civil_parts_turned_in    = 'Lämnade in %s material-enhet(er). Fick x%s betalning och lite material.',
 
         part_stripped     = 'Demonterad: %s.',
         frame_stripped    = 'Ram demonterad och fordon borttaget.',
@@ -134,7 +144,7 @@ Locales = {
         no_inventory_space = 'Inte tillräckligt med plats i inventariet.',
     },
 
-    -- Placeholders for future translations — currently fall back to English.
+    -- Platshållare för framtida översättningar — faller tillbaka till engelska just nu.
     de = {},
     es = {}
 }
