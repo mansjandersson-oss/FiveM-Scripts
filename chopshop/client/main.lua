@@ -344,6 +344,22 @@ local function placePedOnGround(ped)
     end
 end
 
+
+local function placePedOnGround(ped)
+    if not DoesEntityExist(ped) then return end
+
+    if PlaceObjectOnGroundProperly then
+        PlaceObjectOnGroundProperly(ped)
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
+    if found then
+        SetEntityCoordsNoOffset(ped, coords.x, coords.y, groundZ, false, false, false)
+    end
+end
+
 local function spawnNPC(data, options)
     local model = resolveModelHash(data.model)
     if model == 0 or not IsModelValid(model) or not IsModelInCdimage(model) or not IsModelAPed(model) then
