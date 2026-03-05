@@ -69,10 +69,63 @@ local function markPartStripped(netId, name)
     strippedParts[netId][name] = true
 end
 
-local function allPartsStripped(netId)
+local function getVehicleDoorCount(vehicle)
+    if not DoesEntityExist(vehicle) then return 4 end
+
+    local doorBoneIndexes = {
+        GetEntityBoneIndexByName(vehicle, 'door_dside_f'),
+        GetEntityBoneIndexByName(vehicle, 'door_pside_f'),
+        GetEntityBoneIndexByName(vehicle, 'door_dside_r'),
+        GetEntityBoneIndexByName(vehicle, 'door_pside_r')
+    }
+
+    local count = 0
+    for _, boneIndex in ipairs(doorBoneIndexes) do
+        if boneIndex and boneIndex ~= -1 then
+            count = count + 1
+        end
+    end
+
+    if count >= 4 then return 4 end
+    if count >= 2 then return 2 end
+    return 4
+end
+
+local function getDoorIndexForPart(partName)
+    local map = {
+        driver_door    = 0,
+        passenger_door = 1,
+        rear_left_door = 2,
+        rear_right_door = 3,
+        hood           = 4,
+        trunk          = 5,
+    }
+    return map[partName]
+end
+
+local function hideStrippedPartOnVehicle(vehicle, partName)
+    if not DoesEntityExist(vehicle) then return end
+    local doorIndex = getDoorIndexForPart(partName)
+    if not doorIndex then return end
+
+    SetVehicleDoorBroken(vehicle, doorIndex, true)
+end
+
+local function shouldShowStripPartForVehicle(vehicle, part)
+    if part.name == 'rear_left_door' or part.name == 'rear_right_door' then
+        return getVehicleDoorCount(vehicle) >= 4
+    end
+    return true
+end
+
+local function allPartsStripped(vehicle, netId)
     if not strippedParts[netId] then return false end
+    if not vehicle or not DoesEntityExist(vehicle) then return false end
+
     for _, part in ipairs(Config.StripParts) do
-        if not strippedParts[netId][part.name] then return false end
+        if shouldShowStripPartForVehicle(vehicle, part) and not strippedParts[netId][part.name] then
+            return false
+        end
     end
     return true
 end
@@ -125,7 +178,7 @@ local function applyVehicleTarget(vehicle)
 
     -- Part strip options
     for _, part in ipairs(Config.StripParts) do
-        if not isPartStripped(netId, part.name) then
+        if shouldShowStripPartForVehicle(vehicle, part) and not isPartStripped(netId, part.name) then
             local pName     = part.name
             local pItem     = part.item
             local pLabel    = t(part.labelKey)
@@ -146,6 +199,7 @@ local function applyVehicleTarget(vehicle)
 
                     TriggerServerEvent('chopshop:server:StripPart', netId, pName, pItem)
                     markPartStripped(netId, pName)
+                    hideStrippedPartOnVehicle(vehicle, pName)
                     -- Refresh options (adds frame option when all parts done)
                     applyVehicleTarget(vehicle)
                 end
@@ -154,7 +208,7 @@ local function applyVehicleTarget(vehicle)
     end
 
     -- Frame strip option (only after all other parts are stripped)
-    if allPartsStripped(netId) then
+    if allPartsStripped(vehicle, netId) then
         local frameLabel = t(Config.FrameStrip.labelKey)
         options[#options + 1] = {
             name     = 'chop_strip_frame',
@@ -265,23 +319,55 @@ end)
 
 -- ─── NPC spawning helper ──────────────────────────────────────────────────────
 
-local function spawnNPC(data, options)
-    if not loadModel(data.model) then return nil end
 
-    local ped = CreatePed(4, data.model,
-        data.coords.x, data.coords.y, data.coords.z - 1.0,
+local function placePedOnGround(ped)
+    if not DoesEntityExist(ped) then return end
+
+    if PlaceObjectOnGroundProperly then
+        PlaceObjectOnGroundProperly(ped)
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
+    if found then
+        SetEntityCoordsNoOffset(ped, coords.x, coords.y, groundZ, false, false, false)
+    end
+end
+
+local function spawnNPC(data, options)
+    local model = type(data.model) == 'string' and joaat(data.model) or data.model
+    if not IsModelInCdimage(model) then
+        if Config.Debug then
+            print(('[chopshop] invalid NPC model: %s'):format(tostring(data.model)))
+        end
+        return nil
+    end
+
+    if not loadModel(model) then return nil end
+
+    local ped = CreatePed(4, model,
+        data.coords.x, data.coords.y, data.coords.z,
         data.coords.w, false, true)
+
+    if ped == 0 or not DoesEntityExist(ped) then
+        if Config.Debug then
+            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
+        end
+        SetModelAsNoLongerNeeded(model)
+        return nil
+    end
 
     SetEntityHeading(ped, data.coords.w)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedDiesWhenInjured(ped, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
-    PlaceObjectOnGroundProperly(ped)
+    placePedOnGround(ped)
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
 
     exports.ox_target:addLocalEntity(ped, options)
-    SetModelAsNoLongerNeeded(data.model)
+    SetModelAsNoLongerNeeded(model)
     return ped
 end
 

@@ -102,13 +102,21 @@ else -- ox_inventory (default)
 end
 
 -- Build a human-readable vehicle list for the contract item description.
--- Each line shows the completion status and vehicle label.
+-- Completed vehicles are removed from the list so only remaining targets are shown.
 local function buildContractDescription(vehicles, completed)
-    local lines = {}
-    for i, v in ipairs(vehicles) do
-        local tick = completed[v.model] and '✓' or '○'
-        lines[#lines + 1] = ('%s %d. %s'):format(tick, i, v.label)
+    local lines, idx = {}, 1
+
+    for _, v in ipairs(vehicles) do
+        if not completed[v.model] then
+            lines[#lines + 1] = ('○ %d. %s'):format(idx, v.label)
+            idx = idx + 1
+        end
     end
+
+    if #lines == 0 then
+        return t('contract_item_complete')
+    end
+
     return table.concat(lines, '\n')
 end
 
