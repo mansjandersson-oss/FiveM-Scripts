@@ -33,7 +33,7 @@ Config.NPCs = {
     civilian = {
         name   = 'chop_civilian_npc',
         model  = 's_m_m_mech_01',
-        coords = vec4(-352.14, -135.95, 38.31, 248.31),
+        coords = vec4(-359.22, -136.88, 39.43, 68.21)
         blip   = { enabled = true, sprite = 431, color = 3, scale = 0.8, labelKey = 'blip_civilian_npc' }
     }
 }
