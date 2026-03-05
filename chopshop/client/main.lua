@@ -320,22 +320,38 @@ end)
 -- ─── NPC spawning helper ──────────────────────────────────────────────────────
 
 local function spawnNPC(data, options)
-    if not loadModel(data.model) then return nil end
+    local model = type(data.model) == 'string' and joaat(data.model) or data.model
+    if not IsModelInCdimage(model) then
+        if Config.Debug then
+            print(('[chopshop] invalid NPC model: %s'):format(tostring(data.model)))
+        end
+        return nil
+    end
 
-    local ped = CreatePed(4, data.model,
-        data.coords.x, data.coords.y, data.coords.z - 1.0,
+    if not loadModel(model) then return nil end
+
+    local ped = CreatePed(4, model,
+        data.coords.x, data.coords.y, data.coords.z,
         data.coords.w, false, true)
+
+    if ped == 0 or not DoesEntityExist(ped) then
+        if Config.Debug then
+            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
+        end
+        SetModelAsNoLongerNeeded(model)
+        return nil
+    end
 
     SetEntityHeading(ped, data.coords.w)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedDiesWhenInjured(ped, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
-    PlaceObjectOnGroundProperly(ped)
+    PlaceEntityOnGroundProperly(ped)
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
 
     exports.ox_target:addLocalEntity(ped, options)
-    SetModelAsNoLongerNeeded(data.model)
+    SetModelAsNoLongerNeeded(model)
     return ped
 end
 
