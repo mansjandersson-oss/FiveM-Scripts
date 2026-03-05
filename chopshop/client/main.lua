@@ -319,6 +319,22 @@ end)
 
 -- ─── NPC spawning helper ──────────────────────────────────────────────────────
 
+
+local function placePedOnGround(ped)
+    if not DoesEntityExist(ped) then return end
+
+    if PlaceObjectOnGroundProperly then
+        PlaceObjectOnGroundProperly(ped)
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
+    if found then
+        SetEntityCoordsNoOffset(ped, coords.x, coords.y, groundZ, false, false, false)
+    end
+end
+
 local function spawnNPC(data, options)
     local model = type(data.model) == 'string' and joaat(data.model) or data.model
     if not IsModelInCdimage(model) then
@@ -347,7 +363,7 @@ local function spawnNPC(data, options)
     SetPedDiesWhenInjured(ped, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
-    PlaceEntityOnGroundProperly(ped)
+    placePedOnGround(ped)
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
 
     exports.ox_target:addLocalEntity(ped, options)
