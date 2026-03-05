@@ -54,6 +54,7 @@ Locales = {
         contract_incomplete       = 'Contract is not complete yet.',
         contract_turned_in        = 'Contract fulfilled. Received x%s payment and some materials.',
         contract_restored         = 'Contract restored. Find the vehicles and bring them to the chop zone.',
+        contract_item_complete    = '✓ Contract complete',
         not_enough_police         = 'Not enough police on duty (%s required).',
 
         -- Civilian job
@@ -123,6 +124,7 @@ Locales = {
         contract_incomplete       = 'Kontraktet är inte klart ännu.',
         contract_turned_in        = 'Kontrakt fullgjort. Fick x%s betalning och lite material.',
         contract_restored         = 'Kontrakt återställt. Hitta fordonen och kör dem till chopzonen.',
+        contract_item_complete    = '✓ Kontrakt slutfört',
         not_enough_police         = 'Inte tillräckligt med polis i tjänst (%s krävs).',
 
         civil_job_already_active = 'Du har redan ett fordon att demontera.',
