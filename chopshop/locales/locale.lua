@@ -65,9 +65,9 @@ Locales = {
         civilian_vehicle_ready   = 'A %s is waiting near the shop. Drive it to the chop zone.',
         vehicle_spawn_failed     = 'Could not retrieve the vehicle. Try again.',
         civil_frame_stripped     = 'Frame fully stripped. Received x%s payment and some materials.',
-        no_auto_parts            = 'You have no auto parts to turn in.',
+        no_auto_parts            = 'You have no vehicle parts to turn in.',
         remove_parts_failed      = 'Could not remove parts from your inventory.',
-        civil_parts_turned_in    = 'Turned in %s auto part(s). Received x%s payment and some materials.',
+        civil_parts_turned_in    = 'Turned in %s vehicle part(s). Received x%s payment and some materials.',
 
         -- Strip feedback
         part_stripped     = 'Stripped: %s.',
@@ -134,9 +134,9 @@ Locales = {
         civilian_vehicle_ready   = 'En %s väntar vid verkstaden. Kör den till chopzonen.',
         vehicle_spawn_failed     = 'Kunde inte hämta fordonet. Försök igen.',
         civil_frame_stripped     = 'Ram helt demonterad. Fick x%s betalning och lite material.',
-        no_auto_parts            = 'Du har inga bildelar att lämna in.',
+        no_auto_parts            = 'Du har inga fordonsdelar att lämna in.',
         remove_parts_failed      = 'Kunde inte ta bort delar från inventariet.',
-        civil_parts_turned_in    = 'Lämnade in %s bildel(ar). Fick x%s betalning och lite material.',
+        civil_parts_turned_in    = 'Lämnade in %s fordonsdel(ar). Fick x%s betalning och lite material.',
 
         part_stripped     = 'Demonterad: %s.',
         frame_stripped    = 'Ram demonterad och fordon borttaget.',

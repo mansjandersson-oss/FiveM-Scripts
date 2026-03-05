@@ -323,19 +323,39 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
-    local partsCount = countItem(src, Config.Items.auto_parts)
-    if partsCount < 1 then
+    local sellableParts = Config.Civilian.sellableParts or {
+        Config.Items.auto_parts,
+        Config.Items.car_door,
+        Config.Items.car_hood,
+        Config.Items.car_trunk_lid,
+        Config.Items.scrap_metal
+    }
+
+    local totalParts = 0
+    local removalQueue = {}
+
+    for _, itemName in ipairs(sellableParts) do
+        local count = countItem(src, itemName)
+        if count and count > 0 then
+            totalParts = totalParts + count
+            removalQueue[#removalQueue + 1] = { name = itemName, count = count }
+        end
+    end
+
+    if totalParts < 1 then
         notify(src, t('no_auto_parts'), 'error')
         return
     end
 
-    local removed = removeItem(src, Config.Items.auto_parts, partsCount)
-    if not removed then
-        notify(src, t('remove_parts_failed'), 'error')
-        return
+    for _, part in ipairs(removalQueue) do
+        local removed = removeItem(src, part.name, part.count)
+        if not removed then
+            notify(src, t('remove_parts_failed'), 'error')
+            return
+        end
     end
 
-    local reward = partsCount * math.random(
+    local reward = totalParts * math.random(
         Config.Civilian.rewardPerPart.min,
         Config.Civilian.rewardPerPart.max
     )
@@ -343,7 +363,7 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     giveRandomMaterials(src)
     civilianJobs[src] = nil
 
-    notify(src, t('civil_parts_turned_in', partsCount, reward), 'success')
+    notify(src, t('civil_parts_turned_in', totalParts, reward), 'success')
 end)
 
 -- ─── Strip events ─────────────────────────────────────────────────────────────

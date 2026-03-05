@@ -18,8 +18,10 @@ Config.Criminal = {
 -- ─── Civilian job settings ────────────────────────────────────────────────────
 Config.Civilian = {
     cooldown      = 600,                         -- seconds between jobs
-    rewardPerPart = { min = 1, max = 3   },      -- money-item count per auto_part turned in
+    rewardPerPart = { min = 1, max = 3   },      -- money-item count per sold vehicle part
     frameBonus    = { min = 5, max = 15  },      -- money-item count bonus for stripping the frame
+    -- Items that can be sold to the civilian dismantler (lets criminals sell stripped parts too)
+    sellableParts = { 'auto_parts', 'car_door', 'car_hood', 'car_trunk_lid', 'scrap_metal' },
 }
 
 -- ─── NPC definitions ──────────────────────────────────────────────────────────
