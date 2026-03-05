@@ -93,6 +93,8 @@ Config.CivilianVehicleSpawn = vec4(-356.05, -130.21, 38.31, 248.31)
 Config.StripParts = {
     { name = 'driver_door',    labelKey = 'strip_driver_door',    item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'passenger_door', labelKey = 'strip_passenger_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_left_door',  labelKey = 'strip_rear_left_door',  item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_right_door', labelKey = 'strip_rear_right_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'hood',           labelKey = 'strip_hood',           item = 'car_hood',      duration = 6000, icon = 'fa-solid fa-car'               },
     { name = 'trunk',          labelKey = 'strip_trunk',          item = 'car_trunk_lid', duration = 6000, icon = 'fa-solid fa-box'               },
 }
