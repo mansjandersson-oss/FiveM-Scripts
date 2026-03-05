@@ -324,25 +324,26 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     if not player then return end
 
     local sellableParts = Config.Civilian.sellableParts or {
-        Config.Items.auto_parts,
-        Config.Items.car_door,
-        Config.Items.car_hood,
-        Config.Items.car_trunk_lid,
-        Config.Items.scrap_metal
+        Config.Items.scrap_metal,
+        'aluminum',
+        'rubber',
+        'glass',
+        'plastic',
+        'steel'
     }
 
-    local totalParts = 0
+    local totalMaterials = 0
     local removalQueue = {}
 
     for _, itemName in ipairs(sellableParts) do
         local count = countItem(src, itemName)
         if count and count > 0 then
-            totalParts = totalParts + count
+            totalMaterials = totalMaterials + count
             removalQueue[#removalQueue + 1] = { name = itemName, count = count }
         end
     end
 
-    if totalParts < 1 then
+    if totalMaterials < 1 then
         notify(src, t('no_auto_parts'), 'error')
         return
     end
@@ -355,7 +356,7 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
         end
     end
 
-    local reward = totalParts * math.random(
+    local reward = totalMaterials * math.random(
         Config.Civilian.rewardPerPart.min,
         Config.Civilian.rewardPerPart.max
     )
@@ -363,7 +364,7 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     giveRandomMaterials(src)
     civilianJobs[src] = nil
 
-    notify(src, t('civil_parts_turned_in', totalParts, reward), 'success')
+    notify(src, t('civil_parts_turned_in', totalMaterials, reward), 'success')
 end)
 
 -- ─── Strip events ─────────────────────────────────────────────────────────────

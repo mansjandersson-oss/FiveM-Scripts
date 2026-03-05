@@ -58,6 +58,15 @@ local function loadModel(model)
     return HasModelLoaded(model)
 end
 
+
+local function resolveModelHash(model)
+    if type(model) == 'number' then return model end
+    if type(model) == 'string' then
+        return GetHashKey(model)
+    end
+    return 0
+end
+
 -- ─── Part tracking helpers ────────────────────────────────────────────────────
 
 local function isPartStripped(netId, name)
@@ -336,15 +345,20 @@ local function placePedOnGround(ped)
 end
 
 local function spawnNPC(data, options)
-    local model = type(data.model) == 'string' and joaat(data.model) or data.model
-    if not IsModelInCdimage(model) then
+    local model = resolveModelHash(data.model)
+    if model == 0 or not IsModelValid(model) or not IsModelInCdimage(model) or not IsModelAPed(model) then
         if Config.Debug then
             print(('[chopshop] invalid NPC model: %s'):format(tostring(data.model)))
         end
         return nil
     end
 
-    if not loadModel(model) then return nil end
+    if not loadModel(model) then
+        if Config.Debug then
+            print(('[chopshop] failed to load NPC model: %s'):format(tostring(data.model)))
+        end
+        return nil
+    end
 
     local ped = CreatePed(4, model,
         data.coords.x, data.coords.y, data.coords.z,

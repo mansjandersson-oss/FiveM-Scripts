@@ -18,10 +18,10 @@ Config.Criminal = {
 -- ─── Civilian job settings ────────────────────────────────────────────────────
 Config.Civilian = {
     cooldown      = 600,                         -- seconds between jobs
-    rewardPerPart = { min = 1, max = 3   },      -- money-item count per sold vehicle part
+    rewardPerPart = { min = 1, max = 3   },      -- money-item count per sold material
     frameBonus    = { min = 5, max = 15  },      -- money-item count bonus for stripping the frame
-    -- Items that can be sold to the civilian dismantler (lets criminals sell stripped parts too)
-    sellableParts = { 'auto_parts', 'car_door', 'car_hood', 'car_trunk_lid', 'scrap_metal' },
+    -- Materials that can be sold to the civilian dismantler
+    sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
 }
 
 -- ─── NPC definitions ──────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ Config.Items = {
     scrap_metal   = 'scrap_metal',
     auto_parts    = 'auto_parts',
     -- Payment item: set to whatever your server uses for cash (e.g. 'black_money', 'money')
-    money         = 'black_money',
+    money         = 'money',
     -- Contract item given to the player when a criminal contract is issued.
     -- Using this item after a crash restores the active contract.
     chop_contract = 'chop_contract',
