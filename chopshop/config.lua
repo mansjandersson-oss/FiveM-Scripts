@@ -18,8 +18,10 @@ Config.Criminal = {
 -- ─── Civilian job settings ────────────────────────────────────────────────────
 Config.Civilian = {
     cooldown      = 600,                         -- seconds between jobs
-    rewardPerPart = { min = 1, max = 3   },      -- money-item count per auto_part turned in
+    rewardPerPart = { min = 1, max = 3   },      -- money-item count per sold material
     frameBonus    = { min = 5, max = 15  },      -- money-item count bonus for stripping the frame
+    -- Materials that can be sold to the civilian dismantler
+    sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
 }
 
 -- ─── NPC definitions ──────────────────────────────────────────────────────────
@@ -93,6 +95,8 @@ Config.CivilianVehicleSpawn = vec4(-356.05, -130.21, 38.31, 248.31)
 Config.StripParts = {
     { name = 'driver_door',    labelKey = 'strip_driver_door',    item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'passenger_door', labelKey = 'strip_passenger_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_left_door',  labelKey = 'strip_rear_left_door',  item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
+    { name = 'rear_right_door', labelKey = 'strip_rear_right_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'hood',           labelKey = 'strip_hood',           item = 'car_hood',      duration = 6000, icon = 'fa-solid fa-car'               },
     { name = 'trunk',          labelKey = 'strip_trunk',          item = 'car_trunk_lid', duration = 6000, icon = 'fa-solid fa-box'               },
 }
@@ -114,7 +118,7 @@ Config.Items = {
     scrap_metal   = 'scrap_metal',
     auto_parts    = 'auto_parts',
     -- Payment item: set to whatever your server uses for cash (e.g. 'black_money', 'money')
-    money         = 'black_money',
+    money         = 'money',
     -- Contract item given to the player when a criminal contract is issued.
     -- Using this item after a crash restores the active contract.
     chop_contract = 'chop_contract',

@@ -102,13 +102,21 @@ else -- ox_inventory (default)
 end
 
 -- Build a human-readable vehicle list for the contract item description.
--- Each line shows the completion status and vehicle label.
+-- Completed vehicles are removed from the list so only remaining targets are shown.
 local function buildContractDescription(vehicles, completed)
-    local lines = {}
-    for i, v in ipairs(vehicles) do
-        local tick = completed[v.model] and '✓' or '○'
-        lines[#lines + 1] = ('%s %d. %s'):format(tick, i, v.label)
+    local lines, idx = {}, 1
+
+    for _, v in ipairs(vehicles) do
+        if not completed[v.model] then
+            lines[#lines + 1] = ('○ %d. %s'):format(idx, v.label)
+            idx = idx + 1
+        end
     end
+
+    if #lines == 0 then
+        return t('contract_item_complete')
+    end
+
     return table.concat(lines, '\n')
 end
 
@@ -315,19 +323,40 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
-    local partsCount = countItem(src, Config.Items.auto_parts)
-    if partsCount < 1 then
+    local sellableParts = Config.Civilian.sellableParts or {
+        Config.Items.scrap_metal,
+        'aluminum',
+        'rubber',
+        'glass',
+        'plastic',
+        'steel'
+    }
+
+    local totalMaterials = 0
+    local removalQueue = {}
+
+    for _, itemName in ipairs(sellableParts) do
+        local count = countItem(src, itemName)
+        if count and count > 0 then
+            totalMaterials = totalMaterials + count
+            removalQueue[#removalQueue + 1] = { name = itemName, count = count }
+        end
+    end
+
+    if totalMaterials < 1 then
         notify(src, t('no_auto_parts'), 'error')
         return
     end
 
-    local removed = removeItem(src, Config.Items.auto_parts, partsCount)
-    if not removed then
-        notify(src, t('remove_parts_failed'), 'error')
-        return
+    for _, part in ipairs(removalQueue) do
+        local removed = removeItem(src, part.name, part.count)
+        if not removed then
+            notify(src, t('remove_parts_failed'), 'error')
+            return
+        end
     end
 
-    local reward = partsCount * math.random(
+    local reward = totalMaterials * math.random(
         Config.Civilian.rewardPerPart.min,
         Config.Civilian.rewardPerPart.max
     )
@@ -335,7 +364,7 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     giveRandomMaterials(src)
     civilianJobs[src] = nil
 
-    notify(src, t('civil_parts_turned_in', partsCount, reward), 'success')
+    notify(src, t('civil_parts_turned_in', totalMaterials, reward), 'success')
 end)
 
 -- ─── Strip events ─────────────────────────────────────────────────────────────
