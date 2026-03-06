@@ -43,6 +43,8 @@ En FiveM-resurs som lägger till en immersiv chop shop-upplevelse för både **k
 ## OX Inventory-items
 Lägg till följande items i OX Inventory `items.lua`:
 
+> **Obs:** Binärfiler stöds inte i den här leveransen, därför ingår inga item-bilder (`.png`) i repot. Lägg in egna ikoner i `ox_inventory/web/images/` med itemets namn som filnamn.
+
 ```lua
 ['car_door'] = {
     label = 'Bildörr',
