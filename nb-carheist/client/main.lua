@@ -22,7 +22,15 @@ local function t(key, ...)
 end
 
 local function notify(msg, nType)
-    lib.notify({ title = 'NB-CH', description = msg, type = nType or 'inform' })
+    lib.notify({ title = 'NB-CarHeist', description = msg, type = nType or 'inform' })
+end
+
+
+local function formatCountdown(ms)
+    local totalSeconds = math.ceil(ms / 1000)
+    local minutes = math.floor(totalSeconds / 60)
+    local seconds = totalSeconds % 60
+    return ('%02d:%02d'):format(minutes, seconds)
 end
 
 local function loadModel(model)
@@ -107,13 +115,13 @@ local function startDecryptSequence()
     state.decryptStarted = true
     state.decryptEndTime = GetGameTimer() + (Config.DecryptSeconds * 1000)
 
-    state.dropoffBlip = AddBlipForCoord(Config.PoliceDropoff.x, Config.PoliceDropoff.y, Config.PoliceDropoff.z)
+    state.dropoffBlip = AddBlipForCoord(Config.DeliveryGarage.x, Config.DeliveryGarage.y, Config.DeliveryGarage.z)
     SetBlipSprite(state.dropoffBlip, 60)
     SetBlipScale(state.dropoffBlip, 0.9)
     SetBlipColour(state.dropoffBlip, 3)
     SetBlipRoute(state.dropoffBlip, true)
     BeginTextCommandSetBlipName('STRING')
-    AddTextComponentString('Leveransplats')
+    AddTextComponentString('Gömt garage')
     EndTextCommandSetBlipName(state.dropoffBlip)
 
     notify(t('decrypt_started'), 'success')
@@ -252,9 +260,12 @@ CreateThread(function()
             end
         end
 
-        if state.decryptDone and inVeh then
+        if state.decryptStarted and not state.decryptDone then
+            local timeLeft = math.max(0, state.decryptEndTime - GetGameTimer())
+            lib.showTextUI(t('decrypt_countdown', formatCountdown(timeLeft)))
+        elseif state.decryptDone and inVeh then
             local coords = GetEntityCoords(ped)
-            local dist = #(coords - Config.PoliceDropoff)
+            local dist = #(coords - Config.DeliveryGarage)
             if dist < 12.0 then
                 lib.showTextUI(t('deliver_hint'))
                 if IsControlJustReleased(0, 38) then

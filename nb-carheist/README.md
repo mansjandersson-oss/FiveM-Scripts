@@ -6,7 +6,7 @@ Interaktivt FiveM/QBCore-uppdrag:
 2. En bil markeras på GPS som ska stjälas.
 3. När spelaren kapar bilen startas en dekryptering (10 minuter).
 4. Under färden skickas GPS-ping till polis med jämna intervall.
-5. När dekrypteringen är klar levereras bilen vid polisstationen för belöning.
+5. När dekrypteringen är klar levereras bilen vid ett gömt garage för belöning.
 
 ## Krav
 

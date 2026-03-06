@@ -23,7 +23,7 @@ Config.VehicleSpawns = {
     vec4(914.42, -171.22, 74.35, 236.0)
 }
 
-Config.PoliceDropoff = vec3(441.01, -981.8, 30.69)
+Config.DeliveryGarage = vec3(966.23, -1812.45, 31.22)
 
 Config.DecryptSeconds = 600
 Config.PolicePingInterval = 10 -- seconds
@@ -39,7 +39,7 @@ Config.Text = {
     sv = {
         npc_target = 'Prata om biljobb',
         menu_title = 'Svart marknad - Biljobb',
-        menu_desc = 'Stjäl en bil, dekryptera den och kör till polisstationen.',
+        menu_desc = 'Stjäl en bil, dekryptera den och leverera till ett gömt garage.',
         menu_accept = 'Ta uppdrag',
         menu_cancel = 'Inte nu',
         mission_already = 'Du har redan ett aktivt uppdrag.',
@@ -47,10 +47,11 @@ Config.Text = {
         vehicle_marked = 'Målbil markerad.',
         hack_start = 'Kopplar in dekrypterare...',
         hack_failed = 'Du misslyckades med att koppla in dekrypteraren.',
-        decrypt_started = 'Dekryptering startad (10 minuter). Kör till polisstationen.',
+        decrypt_started = 'Dekryptering startad (10 minuter). Kör till det gömda garaget.',
         decrypt_tick = 'Dekryptering klar om %s minuter.',
-        decrypt_done = 'Dekryptering klar! Leverera bilen vid polisstationen.',
-        deliver_hint = '[E] Leverera bilen',
+        decrypt_countdown = 'Dekryptering: %s',
+        decrypt_done = 'Dekryptering klar! Leverera bilen vid det gömda garaget.',
+        deliver_hint = '[E] Leverera bilen i garaget',
         mission_complete = 'Snyggt. Bilen är levererad och du fick betalt.',
         too_far = 'Du måste stå vid leveransplatsen med målbilen.',
         police_ping = 'Stulen bil spårad! Ny GPS-ping inkom.',
