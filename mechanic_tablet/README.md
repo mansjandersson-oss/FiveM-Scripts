@@ -1,26 +1,50 @@
 # mechanic_tablet
 
-Detta resource lägger till stöd för itemet **Surfplatta Mekaniker** i `ox_inventory`.
+Detta resource lägger till en NUI-surfplatta som fungerar som en enkel webbläsare i spelet.
 
 ## Installation
 
-1. Säkerställ att resourcemappen `mechanic_tablet` ligger i din resources-katalog.
+1. Lägg mappen `mechanic_tablet` i din resources-katalog.
 2. Lägg till `ensure mechanic_tablet` i din `server.cfg`.
 3. Starta om servern eller resourcen.
 
-## Item
+## Lägg in item manuellt (ox_inventory)
 
-Itemet är definierat i `ox_inventory/data/items.lua` som:
+Lägg in detta i `ox_inventory/data/items.lua` (inne i `return { ... }`):
 
-- namn: `surfplatta_mekaniker`
-- label: `Surfplatta Mekaniker`
+```lua
+['surfplatta_mekaniker'] = {
+    label = 'Surfplatta Mekaniker',
+    weight = 650,
+    stack = false,
+    consume = 0,
+    client = {
+        export = 'mechanic_tablet.useMechanicTablet'
+    }
+},
+```
 
-När itemet används öppnas en NUI-surfplatta som visar:
+## Funktioner
 
-- https://bennysnewbridge.page.gd/
+När itemet används öppnas surfplattan med startsidan:
+
+- `https://bennysnewbridge.page.gd/`
+
+Webbläsaren har:
+
+- Bakåt
+- Framåt
+- Ladda om
+- Hem-knapp
+- Adressfält (skriv valfri URL och tryck Enter eller **Gå**)
 
 ## Stäng surfplattan
 
-- Klicka på `X` i hörnet, eller
-- Tryck `ESC`, eller
-- Kör kommandot `/stangmekplatta`.
+- Klicka på `✕`
+- Tryck `ESC`
+- Eller kör kommandot `/stangmekplatta`
+
+## Viktigt
+
+Vissa hemsidor blockerar inbäddning i `iframe` (t.ex. via `X-Frame-Options` / `CSP`).
+Om en sida inte visas är det en begränsning från sidan själv, inte från scriptet.

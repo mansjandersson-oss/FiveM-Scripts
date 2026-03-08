@@ -116,16 +116,6 @@ return {
 	},
 
 
-	['surfplatta_mekaniker'] = {
-		label = 'Surfplatta Mekaniker',
-		weight = 650,
-		stack = false,
-		consume = 0,
-		client = {
-			export = 'mechanic_tablet.useMechanicTablet'
-		}
-	},
-
 	['money'] = {
 		label = 'Money',
 	},
