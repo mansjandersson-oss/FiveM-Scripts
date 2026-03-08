@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Surfplatta Mekaniker</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tablet {
+      width: min(94vw, 1280px);
+      height: min(92vh, 820px);
+      background: #151515;
+      border-radius: 28px;
+      border: 14px solid #1d1d1d;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      background: #222;
+      border-bottom: 1px solid #303030;
+    }
+
+    .toolbar button {
+      border: 0;
+      color: #fff;
+      background: #3a3a3a;
+      border-radius: 10px;
+      height: 36px;
+      min-width: 36px;
+      padding: 0 12px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .toolbar button:hover {
+      background: #4b4b4b;
+    }
+
+    .toolbar .danger {
+      background: #8b2b2b;
+    }
+
+    .toolbar .danger:hover {
+      background: #a13535;
+    }
+
+    .address {
+      flex: 1;
+      height: 36px;
+      border: 0;
+      border-radius: 10px;
+      padding: 0 12px;
+      background: #101010;
+      color: #fff;
+      outline: none;
+      font-size: 14px;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="tablet" role="dialog" aria-label="Surfplatta Mekaniker">
+    <div class="toolbar">
+      <button id="backButton" aria-label="Bakåt">◀</button>
+      <button id="forwardButton" aria-label="Framåt">▶</button>
+      <button id="reloadButton" aria-label="Ladda om">⟳</button>
+      <button id="homeButton" aria-label="Hem">Hem</button>
+      <input id="addressInput" class="address" type="text" placeholder="Skriv webbadress..." />
+      <button id="goButton" aria-label="Gå till sida">Gå</button>
+      <button id="closeButton" class="danger" aria-label="Stäng">✕</button>
+    </div>
+
+    <iframe
+      id="browserFrame"
+      class="screen"
+      src="https://bennysnewbridge.page.gd/"
+      title="Mekaniker surfplatta webbläsare"
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+
+  <script>
+    const resourceName = window.GetParentResourceName ? GetParentResourceName() : 'mechanic_tablet';
+    const homeUrl = 'https://bennysnewbridge.page.gd/';
+
+    const backButton = document.getElementById('backButton');
+    const forwardButton = document.getElementById('forwardButton');
+    const reloadButton = document.getElementById('reloadButton');
+    const homeButton = document.getElementById('homeButton');
+    const goButton = document.getElementById('goButton');
+    const closeButton = document.getElementById('closeButton');
+    const addressInput = document.getElementById('addressInput');
+    const browserFrame = document.getElementById('browserFrame');
+
+    let lastUrl = homeUrl;
+
+    const closeTablet = () => {
+      fetch(`https://${resourceName}/closeTablet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8'
+        },
+        body: '{}'
+      });
+    };
+
+    const normalizeUrl = (value) => {
+      const raw = value.trim();
+      if (!raw) return null;
+      if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw)) return raw;
+      return `https://${raw}`;
+    };
+
+    const navigateTo = (value) => {
+      const normalized = normalizeUrl(value);
+      if (!normalized) return;
+      lastUrl = normalized;
+      addressInput.value = normalized;
+      browserFrame.src = normalized;
+    };
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.action === 'setVisible') {
+        document.body.style.display = event.data.visible ? 'flex' : 'none';
+
+        if (event.data.visible) {
+          addressInput.value = lastUrl;
+          addressInput.focus();
+          addressInput.select();
+        }
+      }
+    });
+
+    backButton.addEventListener('click', () => browserFrame.contentWindow?.history.back());
+    forwardButton.addEventListener('click', () => browserFrame.contentWindow?.history.forward());
+    reloadButton.addEventListener('click', () => browserFrame.contentWindow?.location.reload());
+    homeButton.addEventListener('click', () => navigateTo(homeUrl));
+    goButton.addEventListener('click', () => navigateTo(addressInput.value));
+
+    addressInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        navigateTo(addressInput.value);
+      }
+    });
+
+    closeButton.addEventListener('click', closeTablet);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeTablet();
+      }
+    });
+
+    addressInput.value = homeUrl;
+  </script>
+</body>
+</html>
