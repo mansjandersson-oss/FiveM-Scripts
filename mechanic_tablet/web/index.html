@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Surfplatta Mekaniker</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tablet {
+      width: min(92vw, 1200px);
+      height: min(90vh, 760px);
+      background: #121212;
+      border-radius: 28px;
+      border: 14px solid #1d1d1d;
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #000;
+    }
+
+    .close-button {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      border: 0;
+      border-radius: 999px;
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    .close-button:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="tablet" role="dialog" aria-label="Surfplatta Mekaniker">
+    <button class="close-button" id="closeButton" aria-label="Stäng">✕</button>
+    <iframe
+      class="screen"
+      src="https://bennysnewbridge.page.gd/"
+      title="Bennys Newbridge"
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+
+  <script>
+    const resourceName = window.GetParentResourceName ? GetParentResourceName() : 'mechanic_tablet';
+    const closeButton = document.getElementById('closeButton');
+
+    const closeTablet = () => {
+      fetch(`https://${resourceName}/closeTablet`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8'
+        },
+        body: '{}'
+      });
+    };
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.action === 'setVisible') {
+        document.body.style.display = event.data.visible ? 'flex' : 'none';
+      }
+    });
+
+    closeButton.addEventListener('click', closeTablet);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeTablet();
+      }
+    });
+  </script>
+</body>
+</html>
