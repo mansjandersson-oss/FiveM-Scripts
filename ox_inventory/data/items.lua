@@ -115,7 +115,6 @@ return {
 		}
 	},
 
-
 	['money'] = {
 		label = 'Money',
 	},
