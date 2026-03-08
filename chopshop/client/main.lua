@@ -329,21 +329,6 @@ end)
 -- ─── Hjälpare för NPC-spawn ──────────────────────────────────────────────────
 
 
-local function placePedOnGround(ped)
-    if not DoesEntityExist(ped) then return end
-
-    if PlaceObjectOnGroundProperly then
-        PlaceObjectOnGroundProperly(ped)
-        return
-    end
-
-    local coords = GetEntityCoords(ped)
-    local found, groundZ = GetGroundZFor_3dCoord(coords.x, coords.y, coords.z + 2.0, false)
-    if found then
-        SetEntityCoordsNoOffset(ped, coords.x, coords.y, groundZ, false, false, false)
-    end
-end
-
 local function spawnNPC(data, options)
     local model = resolveModelHash(data.model)
     if model == 0 or not IsModelValid(model) or not IsModelInCdimage(model) or not IsModelAPed(model) then
@@ -361,8 +346,16 @@ local function spawnNPC(data, options)
     end
 
     local ped = CreatePed(4, model,
-        data.coords.x, data.coords.y, data.coords.z,
-        data.coords.w, false, true)
+        data.coords.x, data.coords.y, data.coords.z - 1.0,
+        data.coords.w, true, true)
+
+    if ped == 0 or not DoesEntityExist(ped) then
+        if Config.Debug then
+            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
+        end
+        SetModelAsNoLongerNeeded(model)
+        return nil
+    end
 
     if ped == 0 or not DoesEntityExist(ped) then
         if Config.Debug then
@@ -377,7 +370,8 @@ local function spawnNPC(data, options)
     SetPedDiesWhenInjured(ped, false)
     SetEntityInvincible(ped, true)
     FreezeEntityPosition(ped, true)
-    placePedOnGround(ped)
+    SetEntityVisible(ped, true, false)
+    SetEntityAlpha(ped, 255, false)
     TaskStartScenarioInPlace(ped, 'WORLD_HUMAN_STAND_IMPATIENT', 0, true)
 
     exports.ox_target:addLocalEntity(ped, options)
