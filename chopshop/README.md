@@ -5,7 +5,7 @@ En FiveM-resurs som lägger till en immersiv chop shop-upplevelse för både **k
 ## Funktioner
 
 ### 🔴 Kriminell väg
-1. Prata med NPC:n **Skum Kontakt** för att få ett kontrakt på **3 fordon**.
+1. Prata med **Chop-kontakten** för att få ett kontrakt på **3 fordon** (kriminell väg).
 2. Ett **Kontrakt**-item läggs i ditt inventory — kontrollera status via `visa kontrakt` hos NPC:n, eller använd itemet efter en krasch för att återställa progression.
 3. Kontraktet listar fordonsmodellerna du ska hitta — de kör redan runt i staden (inga kartblips).
 4. Hitta ett fordon som matchar kontraktet, stjäl det och kör till **Chop-zonen**.
@@ -22,11 +22,12 @@ En FiveM-resurs som lägger till en immersiv chop shop-upplevelse för både **k
 9. När alla fordon är klara, återvänd till NPC:n och **Lämna in** kontraktet för betalning.
 
 ### 🔵 Civil väg
-1. Prata med **Bilskrotare** NPC för att få ett slumpmässigt fordon att demontera.
-2. Fordonet spawnar nära NPC:n — kör det till **Chop-zonen**.
+1. Prata med **samma Chop-kontakt** för att få ett slumpmässigt fordon att demontera (laglig väg).
+2. Fordonet spawnar nära kontaktpunkten — kör det till **Chop-zonen**.
 3. Demontera delar på samma sätt som den kriminella vägen.
-4. Ramen ger en mindre bonusbetalning automatiskt.
-5. Lämna in material hos NPC:n för att få pengar.
+4. Du får endast material (inte `auto_parts`) när du demonterar i civil väg.
+5. Ramen ger en mindre bonusbetalning automatiskt.
+6. Lämna in material hos samma NPC för att få pengar.
 
 ## Skill checks & animationer
 - Varje demonteringssteg kräver ett **lib.skillCheck**-minispel (svårare på sista ramsteget).
@@ -67,12 +68,6 @@ Lägg till följande items i OX Inventory `items.lua`:
 ['scrap_metal'] = {
     label = 'Skrotmetall',
     weight = 3000,
-    stack = true,
-    close = true,
-},
-['auto_parts'] = {
-    label = 'Bildelar',
-    weight = 2000,
     stack = true,
     close = true,
 },
@@ -141,11 +136,11 @@ Alla justerbara värden finns i `config.lua`:
 | `Config.Civilian` | `cooldown` | Sekunder mellan civila jobb (standard 600) |
 | `Config.Civilian` | `rewardPerPart` | Antal pengar-item per sålt material-item |
 | `Config.Civilian` | `frameBonus` | Bonus i pengar-item för slutförd ramdemontering |
-| `Config.Civilian` | `sellableParts` | Materialitems som kan säljas hos civil NPC |
+| `Config.Civilian` | `sellableParts` | Materialitems som kan säljas hos chop-kontakten |
 | `Config.Items` | `money` | Itemnamn som används som betalning (nu `'money'`) |
 | `Config.Items` | `chop_contract` | Item som ges när kontrakt utfärdas (återställning efter krasch) |
 | `Config.MaterialRewards` | — | Pool av fordonsmaterial som kan delas ut slumpmässigt |
-| `Config.NPCs` | — | Koordinater och pedmodeller för båda NPC:er |
+| `Config.NPCs.main` | — | Koordinater och pedmodell för gemensam NPC |
 | `Config.ChopZone` | — | Position, storlek och rotation för chop-zonen |
 | `Config.ContractVehicles` | — | Pool med fordonsmodeller för kriminella kontrakt |
 | `Config.CivilianVehicles` | — | Pool med fordon för civila jobb |

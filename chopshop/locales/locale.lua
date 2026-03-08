@@ -3,6 +3,7 @@ Locales = {
         script_title = 'Chop Shop',
 
         -- Blip-etiketter
+        blip_main_npc     = 'Chop Contact',
         blip_criminal_npc = 'Shady Contact',
         blip_civilian_npc = 'Auto Dismantler',
         blip_chop_zone    = 'Chop Zone',
@@ -79,6 +80,7 @@ Locales = {
     sv = {
         script_title = 'Chop Shop',
 
+        blip_main_npc     = 'Chop-kontakt',
         blip_criminal_npc = 'Skum Kontakt',
         blip_civilian_npc = 'Bilskrotare',
         blip_chop_zone    = 'Chopzon',

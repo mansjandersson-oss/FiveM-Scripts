@@ -357,14 +357,6 @@ local function spawnNPC(data, options)
         return nil
     end
 
-    if ped == 0 or not DoesEntityExist(ped) then
-        if Config.Debug then
-            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
-        end
-        SetModelAsNoLongerNeeded(model)
-        return nil
-    end
-
     SetEntityHeading(ped, data.coords.w)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedDiesWhenInjured(ped, false)
@@ -379,15 +371,48 @@ local function spawnNPC(data, options)
     return ped
 end
 
--- ─── Kriminell NPC ───────────────────────────────────────────────────────────
+local function getPlayerRoute()
+    local roleCfg = Config.RoleCheckExport
+    if not roleCfg or not roleCfg.resource or not roleCfg.func then
+        return 'both'
+    end
 
-local function setupCriminalNPC()
-    npcEntities.criminal = spawnNPC(Config.NPCs.criminal, {
+    local exportRes = exports[roleCfg.resource]
+    if not exportRes or not exportRes[roleCfg.func] then
+        return 'both'
+    end
+
+    local ok, result = pcall(function()
+        return exportRes[roleCfg.func]()
+    end)
+
+    if ok and (result == 'criminal' or result == 'civilian' or result == 'both') then
+        return result
+    end
+
+    return 'both'
+end
+
+local function canUseCriminalOptions()
+    local route = getPlayerRoute()
+    return route == 'criminal' or route == 'both'
+end
+
+local function canUseCivilianOptions()
+    local route = getPlayerRoute()
+    return route == 'civilian' or route == 'both'
+end
+
+-- ─── Huvud-NPC ───────────────────────────────────────────────────────────────
+
+local function setupMainNPC()
+    npcEntities.main = spawnNPC(Config.NPCs.main, {
         {
             name     = 'chop_get_contract',
             label    = t('get_contract'),
             icon     = 'fa-solid fa-file-contract',
             distance = 2.5,
+            canInteract = canUseCriminalOptions,
             onSelect = function() TriggerServerEvent('chopshop:server:GetContract') end
         },
         {
@@ -395,6 +420,7 @@ local function setupCriminalNPC()
             label    = t('view_contract'),
             icon     = 'fa-solid fa-list-check',
             distance = 2.5,
+            canInteract = canUseCriminalOptions,
             onSelect = function() TriggerServerEvent('chopshop:server:ViewContract') end
         },
         {
@@ -402,20 +428,15 @@ local function setupCriminalNPC()
             label    = t('turn_in_contract'),
             icon     = 'fa-solid fa-hand-holding-dollar',
             distance = 2.5,
+            canInteract = canUseCriminalOptions,
             onSelect = function() TriggerServerEvent('chopshop:server:TurnInContract') end
-        }
-    })
-end
-
--- ─── Civil NPC ───────────────────────────────────────────────────────────────
-
-local function setupCivilianNPC()
-    npcEntities.civilian = spawnNPC(Config.NPCs.civilian, {
+        },
         {
             name     = 'chop_request_vehicle',
             label    = t('request_vehicle'),
             icon     = 'fa-solid fa-car',
             distance = 2.5,
+            canInteract = canUseCivilianOptions,
             onSelect = function() TriggerServerEvent('chopshop:server:RequestCivilianVehicle') end
         },
         {
@@ -423,6 +444,7 @@ local function setupCivilianNPC()
             label    = t('turn_in_parts'),
             icon     = 'fa-solid fa-boxes-packing',
             distance = 2.5,
+            canInteract = canUseCivilianOptions,
             onSelect = function() TriggerServerEvent('chopshop:server:TurnInAutoParts') end
         }
     })
@@ -443,14 +465,9 @@ local function createBlip(coords, sprite, color, scale, label)
 end
 
 local function createBlips()
-    local cn = Config.NPCs.criminal
-    if cn.blip.enabled ~= false then
-        createBlip(cn.coords, cn.blip.sprite, cn.blip.color, cn.blip.scale, t(cn.blip.labelKey))
-    end
-
-    local cv = Config.NPCs.civilian
-    if cv.blip.enabled ~= false then
-        createBlip(cv.coords, cv.blip.sprite, cv.blip.color, cv.blip.scale, t(cv.blip.labelKey))
+    local mn = Config.NPCs.main
+    if mn.blip.enabled ~= false then
+        createBlip(mn.coords, mn.blip.sprite, mn.blip.color, mn.blip.scale, t(mn.blip.labelKey))
     end
 
     local cz = Config.ChopZone
@@ -533,6 +550,5 @@ end)
 CreateThread(function()
     createBlips()
     setupChopZone()
-    setupCriminalNPC()
-    setupCivilianNPC()
+    setupMainNPC()
 end)

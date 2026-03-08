@@ -369,6 +369,22 @@ end)
 
 -- ─── Demonteringshändelser ───────────────────────────────────────────────────
 
+local function giveCivilianMaterials(src, amount)
+    local pool = Config.Civilian.sellableParts or {}
+    if #pool < 1 then return 0 end
+
+    local given = 0
+    for _ = 1, amount do
+        local itemName = pool[math.random(#pool)]
+        if canCarry(src, itemName, 1) then
+            addItem(src, itemName, 1)
+            given = given + 1
+        end
+    end
+
+    return given
+end
+
 RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem)
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
@@ -380,16 +396,22 @@ RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem
         return
     end
 
-    local job        = civilianJobs[src]
-    local isCivil    = job and job.active
-    local itemToGive = isCivil and Config.Items.auto_parts or partItem
+    local job     = civilianJobs[src]
+    local isCivil = job and job.active
 
-    if not canCarry(src, itemToGive, 1) then
-        notify(src, t('no_inventory_space'), 'error')
-        return
+    if isCivil then
+        if giveCivilianMaterials(src, 1) < 1 then
+            notify(src, t('no_inventory_space'), 'error')
+            return
+        end
+    else
+        if not canCarry(src, partItem, 1) then
+            notify(src, t('no_inventory_space'), 'error')
+            return
+        end
+        addItem(src, partItem, 1)
     end
 
-    addItem(src, itemToGive, 1)
     notify(src, t('part_stripped', t('part_' .. partName)), 'success')
 end)
 
@@ -403,17 +425,13 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     local job     = civilianJobs[src]
     local isCivil = job and job.active
 
-    -- Ge skrot / auto_parts för ramen
     local scrapCount = math.random(Config.FrameStrip.scrapCount.min, Config.FrameStrip.scrapCount.max)
-    local scrapItem  = isCivil and Config.Items.auto_parts or Config.FrameStrip.scrapItem
-
-    if canCarry(src, scrapItem, scrapCount) then
-        addItem(src, scrapItem, scrapCount)
-    else
-        notify(src, t('no_inventory_space'), 'error')
-    end
 
     if isCivil then
+        if giveCivilianMaterials(src, scrapCount) < 1 then
+            notify(src, t('no_inventory_space'), 'error')
+        end
+
         -- Ge rambonus som pengar-item + slumpmässiga material
         local bonus = math.random(Config.Civilian.frameBonus.min, Config.Civilian.frameBonus.max)
         addItem(src, Config.Items.money, bonus)
@@ -421,6 +439,12 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
         job.active = false
         notify(src, t('civil_frame_stripped', bonus), 'success')
     else
+        if canCarry(src, Config.FrameStrip.scrapItem, scrapCount) then
+            addItem(src, Config.FrameStrip.scrapItem, scrapCount)
+        else
+            notify(src, t('no_inventory_space'), 'error')
+        end
+
         -- Uppdatera kriminellt kontrakt om tillämpligt
         local contract = contracts[src]
         if contract and contract.vehicles then

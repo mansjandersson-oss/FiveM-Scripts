@@ -26,18 +26,20 @@ Config.Civilian = {
 
 -- ─── NPC-definitioner ─────────────────────────────────────────────────────────
 Config.NPCs = {
-    criminal = {
-        name   = 'chop_criminal_npc',
+    main = {
+        name   = 'chop_main_npc',
         model  = 'g_m_m_chigoon_01',
-        coords = vec4(947.51, -3096.07, 5.9, 182.17),
-        blip   = { enabled = true, sprite = 61,  color = 1, scale = 0.8, labelKey = 'blip_criminal_npc' }
-    },
-    civilian = {
-        name   = 'chop_civilian_npc',
-        model  = 's_m_m_mech_01',
-        coords = vec4(-359.22, -136.88, 39.43, 68.21),
-        blip   = { enabled = true, sprite = 431, color = 3, scale = 0.8, labelKey = 'blip_civilian_npc' }
+        coords = vec4(258.61, -1801.29, 27.11, 52.43),
+        blip   = { enabled = true, sprite = 61, color = 1, scale = 0.8, labelKey = 'blip_main_npc' }
     }
+}
+
+-- Export för att avgöra om spelaren är laglig/kriminell.
+-- Byt ut resource/function till ert eget system (du sa att du lägger in detta manuellt).
+-- Funktionens retur bör vara: 'criminal', 'civilian' eller 'both'.
+Config.RoleCheckExport = {
+    resource = nil,
+    func     = nil,
 }
 
 -- ─── Chop-zon ────────────────────────────────────────────────────────────────
