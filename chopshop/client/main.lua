@@ -357,6 +357,14 @@ local function spawnNPC(data, options)
         return nil
     end
 
+    if ped == 0 or not DoesEntityExist(ped) then
+        if Config.Debug then
+            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
+        end
+        SetModelAsNoLongerNeeded(model)
+        return nil
+    end
+
     SetEntityHeading(ped, data.coords.w)
     SetBlockingOfNonTemporaryEvents(ped, true)
     SetPedDiesWhenInjured(ped, false)
