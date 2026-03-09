@@ -5,28 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Surfplatta Mekaniker</title>
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: Arial, sans-serif;
-    }
-
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      background: transparent !important;
+      background-color: transparent !important;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
     }
 
-    body {
-      margin: 0;
+    /* Never draw any fullscreen overlay by default */
+    #app {
+      display: none;
       width: 100vw;
       height: 100vh;
-      overflow: hidden;
-      background: transparent;
-      display: none;
       align-items: center;
-      pointer-events: none;
       justify-content: center;
+      pointer-events: none;
+      background: transparent;
+    }
+
+    #app.visible {
+      display: flex;
+      pointer-events: auto;
     }
 
     .tablet {
@@ -62,16 +63,8 @@
       font-weight: 600;
     }
 
-    .toolbar button:hover {
-      background: #4b4b4b;
-    }
-
     .toolbar .danger {
       background: #8b2b2b;
-    }
-
-    .toolbar .danger:hover {
-      background: #a13535;
     }
 
     .address {
@@ -88,38 +81,40 @@
 
     .screen {
       width: 100%;
-      height: 100%;
+      flex: 1;
       border: 0;
       background: #000;
-      flex: 1;
     }
   </style>
 </head>
 <body>
-  <div class="tablet" role="dialog" aria-label="Surfplatta Mekaniker">
-    <div class="toolbar">
-      <button id="backButton" aria-label="Bakåt">◀</button>
-      <button id="forwardButton" aria-label="Framåt">▶</button>
-      <button id="reloadButton" aria-label="Ladda om">⟳</button>
-      <button id="homeButton" aria-label="Hem">Hem</button>
-      <input id="addressInput" class="address" type="text" placeholder="Skriv webbadress..." />
-      <button id="goButton" aria-label="Gå till sida">Gå</button>
-      <button id="closeButton" class="danger" aria-label="Stäng">✕</button>
-    </div>
+  <div id="app" aria-hidden="true">
+    <div class="tablet" role="dialog" aria-label="Surfplatta Mekaniker">
+      <div class="toolbar">
+        <button id="backButton" aria-label="Bakåt">◀</button>
+        <button id="forwardButton" aria-label="Framåt">▶</button>
+        <button id="reloadButton" aria-label="Ladda om">⟳</button>
+        <button id="homeButton" aria-label="Hem">Hem</button>
+        <input id="addressInput" class="address" type="text" placeholder="Skriv webbadress..." />
+        <button id="goButton" aria-label="Gå till sida">Gå</button>
+        <button id="closeButton" class="danger" aria-label="Stäng">✕</button>
+      </div>
 
-    <iframe
-      id="browserFrame"
-      class="screen"
-      src="about:blank"
-      title="Mekaniker surfplatta webbläsare"
-      referrerpolicy="no-referrer"
-    ></iframe>
+      <iframe
+        id="browserFrame"
+        class="screen"
+        src="about:blank"
+        title="Mekaniker surfplatta webbläsare"
+        referrerpolicy="no-referrer"
+      ></iframe>
+    </div>
   </div>
 
   <script>
     const resourceName = window.GetParentResourceName ? GetParentResourceName() : 'mechanic_tablet';
     const homeUrl = 'https://bennysnewbridge.page.gd/';
 
+    const app = document.getElementById('app');
     const backButton = document.getElementById('backButton');
     const forwardButton = document.getElementById('forwardButton');
     const reloadButton = document.getElementById('reloadButton');
@@ -134,9 +129,7 @@
     const closeTablet = () => {
       fetch(`https://${resourceName}/closeTablet`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8'
-        },
+        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         body: '{}'
       });
     };
@@ -148,16 +141,6 @@
       return `https://${raw}`;
     };
 
-    const loadCurrentPage = () => {
-      if (browserFrame.src !== lastUrl) {
-        browserFrame.src = lastUrl;
-      }
-    };
-
-    const unloadPage = () => {
-      browserFrame.src = 'about:blank';
-    };
-
     const navigateTo = (value) => {
       const normalized = normalizeUrl(value);
       if (!normalized) return;
@@ -166,20 +149,24 @@
       browserFrame.src = normalized;
     };
 
+    const setVisible = (visible) => {
+      if (visible) {
+        app.classList.add('visible');
+        app.setAttribute('aria-hidden', 'false');
+        addressInput.value = lastUrl;
+        browserFrame.src = lastUrl;
+        addressInput.focus();
+        addressInput.select();
+      } else {
+        app.classList.remove('visible');
+        app.setAttribute('aria-hidden', 'true');
+        browserFrame.src = 'about:blank';
+      }
+    };
+
     window.addEventListener('message', (event) => {
       if (event.data?.action === 'setVisible') {
-        const visible = !!event.data.visible;
-        document.body.style.display = visible ? 'flex' : 'none';
-        document.body.style.pointerEvents = visible ? 'auto' : 'none';
-
-        if (visible) {
-          addressInput.value = lastUrl;
-          loadCurrentPage();
-          addressInput.focus();
-          addressInput.select();
-        } else {
-          unloadPage();
-        }
+        setVisible(!!event.data.visible);
       }
     });
 
@@ -188,6 +175,7 @@
     reloadButton.addEventListener('click', () => browserFrame.contentWindow?.location.reload());
     homeButton.addEventListener('click', () => navigateTo(homeUrl));
     goButton.addEventListener('click', () => navigateTo(addressInput.value));
+    closeButton.addEventListener('click', closeTablet);
 
     addressInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -196,15 +184,12 @@
       }
     });
 
-    closeButton.addEventListener('click', closeTablet);
-
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        closeTablet();
-      }
+      if (event.key === 'Escape') closeTablet();
     });
 
-    addressInput.value = homeUrl;
+    // Safety: remain hidden until Lua explicitly opens the tablet.
+    setVisible(false);
   </script>
 </body>
 </html>
