@@ -65,6 +65,7 @@ Locales = {
         civilian_vehicle_blip    = 'Dismantle Vehicle',
         civilian_vehicle_ready   = 'A %s is waiting near the shop. Drive it to the chop zone.',
         vehicle_spawn_failed     = 'Could not retrieve the vehicle. Try again.',
+        towtruck_ready          = 'A towtruck is waiting nearby. Use it to pick up the dismantle car.',
         civil_frame_stripped     = 'Frame fully stripped. Received x%s payment and some materials.',
         no_auto_parts            = 'You have no materials to turn in.',
         remove_parts_failed      = 'Could not remove parts from your inventory.',
@@ -75,6 +76,10 @@ Locales = {
         frame_stripped    = 'Frame stripped and vehicle removed.',
         invalid_part      = 'Invalid part.',
         no_inventory_space = 'Not enough inventory space.',
+        too_far_from_part  = 'You must stand closer to that vehicle part.',
+        invalid_target_vehicle = 'This vehicle is not valid for your active chop job.',
+        towtruck_despawn_prompt = 'Press ~INPUT_CONTEXT~ to store towtruck.',
+        towtruck_despawned      = 'Towtruck stored.',
     },
 
     sv = {
@@ -135,6 +140,7 @@ Locales = {
         civilian_vehicle_blip    = 'Demonteringsbil',
         civilian_vehicle_ready   = 'En %s väntar vid verkstaden. Kör den till chopzonen.',
         vehicle_spawn_failed     = 'Kunde inte hämta fordonet. Försök igen.',
+        towtruck_ready          = 'En towtruck väntar i närheten. Använd den för att hämta demonteringsbilen.',
         civil_frame_stripped     = 'Ram helt demonterad. Fick x%s betalning och lite material.',
         no_auto_parts            = 'Du har inga material att lämna in.',
         remove_parts_failed      = 'Kunde inte ta bort delar från inventariet.',
@@ -144,6 +150,10 @@ Locales = {
         frame_stripped    = 'Ram demonterad och fordon borttaget.',
         invalid_part      = 'Ogiltig del.',
         no_inventory_space = 'Inte tillräckligt med plats i inventariet.',
+        too_far_from_part  = 'Du måste stå närmare den bildelen.',
+        invalid_target_vehicle = 'Detta fordon är inte giltigt för ditt aktiva skrotjobb.',
+        towtruck_despawn_prompt = 'Tryck ~INPUT_CONTEXT~ för att ställa undan towtruck.',
+        towtruck_despawned      = 'Towtruck undanställd.',
     },
 
     -- Platshållare för framtida översättningar — faller tillbaka till engelska just nu.

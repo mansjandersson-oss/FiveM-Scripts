@@ -369,6 +369,34 @@ end)
 
 -- ─── Demonteringshändelser ───────────────────────────────────────────────────
 
+
+local function isVehicleValidForStrip(src, netId)
+    if type(netId) ~= 'number' then return false end
+
+    local job = civilianJobs[src]
+    if job and job.active then
+        return job.vehicleNetId ~= nil and job.vehicleNetId == netId
+    end
+
+    local contract = contracts[src]
+    if not contract or not contract.vehicles then return false end
+
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    if not (entity and entity > 0 and DoesEntityExist(entity)) then return false end
+
+    local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(entity) or 0)
+    if type(modelName) ~= 'string' then return false end
+    modelName = modelName:lower()
+
+    for _, v in ipairs(contract.vehicles) do
+        if v.model:lower() == modelName and not contract.completed[v.model] then
+            return true
+        end
+    end
+
+    return false
+end
+
 local function giveCivilianMaterials(src, amount)
     local pool = Config.Civilian.sellableParts or {}
     if #pool < 1 then return 0 end
@@ -389,6 +417,11 @@ RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
+
+    if not isVehicleValidForStrip(src, netId) then
+        notify(src, t('invalid_target_vehicle'), 'error')
+        return
+    end
 
     -- Serverside-validering: acceptera endast kända part name + item-kombinationer
     if not isValidPart(partName, partItem) then
@@ -419,6 +452,11 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
+
+    if not isVehicleValidForStrip(src, netId) then
+        notify(src, t('invalid_target_vehicle'), 'error')
+        return
+    end
 
     if type(modelName) ~= 'string' then modelName = '' end
 

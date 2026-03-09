@@ -92,6 +92,11 @@ Config.CivilianVehicles = {
 -- Spawnpunkt för civilt fordon (nära civila NPC:n)
 Config.CivilianVehicleSpawn = vec4(-356.05, -130.21, 38.31, 248.31)
 
+-- Spawnpunkt för towtruck2 vid civil demonteringsbeställning (hämtbil)
+Config.CivilianTowTruckSpawn = vec4(266.8, -1792.6, 27.1, 55.0)
+-- Punkt där towtruck2 kan despawnas med knapptryck
+Config.CivilianTowTruckDespawn = vec4(265.89, -1789.38, 26.73, 319.67)
+
 -- ─── Delar att demontera från varje fordon ───────────────────────────────────
 Config.StripParts = {
     { name = 'driver_door',    labelKey = 'strip_driver_door',    item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },

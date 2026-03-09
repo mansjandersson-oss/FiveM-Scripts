@@ -8,6 +8,8 @@ local chopZoneVehicle  = nil  -- fordon som just nu står parkerat och demontera
 local npcEntities      = {}   -- spawnade NPC-ped handles
 local contractVehicles = {}   -- { entity, blip, model } för kriminella kontraktsspawns
 local civilianVehicleBlip = nil
+local activeContractData  = { vehicles = nil, completed = {} }
+local activeCivilianVehicleNetId = nil
 
 -- ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
 
@@ -112,6 +114,46 @@ local function getDoorIndexForPart(partName)
     return map[partName]
 end
 
+local function getPartBoneName(partName)
+    local map = {
+        driver_door     = 'door_dside_f',
+        passenger_door  = 'door_pside_f',
+        rear_left_door  = 'door_dside_r',
+        rear_right_door = 'door_pside_r',
+        hood            = 'bonnet',
+        trunk           = 'boot'
+    }
+    return map[partName]
+end
+
+local function isPlayerNearVehiclePart(vehicle, partName)
+    local ped = PlayerPedId()
+    if not DoesEntityExist(vehicle) then return false end
+
+    local checkDist = 2.2
+    local partBone = getPartBoneName(partName)
+
+    if partBone then
+        local boneIndex = GetEntityBoneIndexByName(vehicle, partBone)
+        if boneIndex and boneIndex ~= -1 then
+            local partCoords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
+            local pedCoords = GetEntityCoords(ped)
+            return #(pedCoords - partCoords) <= checkDist
+        end
+    end
+
+    local doorIndex = getDoorIndexForPart(partName)
+    if doorIndex then
+        local doorCoords = GetEntryPositionOfDoor(vehicle, doorIndex)
+        if doorCoords and type(doorCoords) == 'vector3' then
+            local pedCoords = GetEntityCoords(ped)
+            return #(pedCoords - doorCoords) <= checkDist
+        end
+    end
+
+    return #(GetEntityCoords(ped) - GetEntityCoords(vehicle)) <= 3.0
+end
+
 local function hideStrippedPartOnVehicle(vehicle, partName)
     if not DoesEntityExist(vehicle) then return end
     local doorIndex = getDoorIndexForPart(partName)
@@ -176,11 +218,35 @@ local function despawnVehicle(vehicle)
     end
 end
 
+local function isVehicleAllowedForCurrentJob(vehicle)
+    if not DoesEntityExist(vehicle) then return false end
+    local vehicleNetId = NetworkGetNetworkIdFromEntity(vehicle)
+
+    if activeCivilianVehicleNetId then
+        return vehicleNetId == activeCivilianVehicleNetId
+    end
+
+    if not activeContractData.vehicles then return false end
+
+    local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)):lower()
+    for _, v in ipairs(activeContractData.vehicles) do
+        if v.model:lower() == modelName and not activeContractData.completed[v.model] then
+            return true
+        end
+    end
+
+    return false
+end
+
 -- Bygg och applicera ox_target-interaktioner på ett fordon i zonen.
 -- Beräknas om varje gång en del demonteras så listan hålls korrekt.
 local function applyVehicleTarget(vehicle)
     if not DoesEntityExist(vehicle) then return end
     clearVehicleTarget(vehicle)
+
+    if not isVehicleAllowedForCurrentJob(vehicle) then
+        return
+    end
 
     local netId   = NetworkGetNetworkIdFromEntity(vehicle)
     local options = {}
@@ -202,6 +268,11 @@ local function applyVehicleTarget(vehicle)
                 icon     = part.icon or 'fa-solid fa-screwdriver-wrench',
                 distance = 3.0,
                 onSelect = function()
+                    if not isPlayerNearVehiclePart(vehicle, pName) then
+                        notify(t('too_far_from_part'), 'error')
+                        return
+                    end
+
                     if not runSkillMinigame(Config.Minigames.StripPart) then return end
                     local done = runAction(pLabel, pDuration, pAnim)
                     if not done then notify(t('action_cancelled'), 'error'); return end
@@ -233,6 +304,13 @@ local function applyVehicleTarget(vehicle)
                 if not done then notify(t('action_cancelled'), 'error'); return end
 
                 TriggerServerEvent('chopshop:server:StripFrame', netId, modelName)
+
+                if activeContractData.vehicles then
+                    activeContractData.completed[modelName] = true
+                end
+                if activeCivilianVehicleNetId and activeCivilianVehicleNetId == netId then
+                    activeCivilianVehicleNetId = nil
+                end
 
                 strippedParts[netId] = nil
                 clearVehicleTarget(vehicle)
@@ -483,6 +561,9 @@ RegisterNetEvent('chopshop:client:ShowContract', function(contractData)
         notify(t('no_active_contract'), 'error')
         return
     end
+    activeContractData.vehicles = contractData.vehicles
+    activeContractData.completed = contractData.completed or {}
+
     local lines = {}
     for i, v in ipairs(contractData.vehicles) do
         local tick = contractData.completed[v.model] and '✓' or '○'
@@ -499,6 +580,10 @@ end)
 -- Kontraktsfordon spawnas inte – de kör redan runt i staden.
 -- Informera spelaren att hitta kontraktsfordonen ute på gatorna.
 RegisterNetEvent('chopshop:client:SpawnContractVehicles', function(contractData)
+    if contractData and contractData.vehicles then
+        activeContractData.vehicles = contractData.vehicles
+        activeContractData.completed = activeContractData.completed or {}
+    end
     notify(t('contract_vehicles_spawned'), 'inform')
 end)
 
@@ -517,7 +602,39 @@ RegisterNetEvent('chopshop:client:SpawnCivilianVehicle', function(vehicleData)
     SetEntityAsMissionEntity(veh, true, true)
     SetModelAsNoLongerNeeded(model)
 
+    -- Spawna en towtruck2 i närheten för upphämtning.
+    local towModel = 'towtruck2'
+    local towSp    = Config.CivilianTowTruckSpawn or vec4(sp.x + 8.0, sp.y + 5.0, sp.z, sp.w)
+    if loadModel(towModel) then
+        local tow = CreateVehicle(towModel, towSp.x, towSp.y, towSp.z, towSp.w, true, false)
+        if tow and DoesEntityExist(tow) then
+            SetVehicleOnGroundProperly(tow)
+            SetEntityAsMissionEntity(tow, true, true)
+            SetVehicleDoorsLocked(tow, 1)
+            SetVehicleDoorsLockedForAllPlayers(tow, false)
+            SetVehicleNeedsToBeHotwired(tow, false)
+            SetVehicleUndriveable(tow, false)
+
+            local towPlate = GetVehicleNumberPlateText(tow)
+            TriggerEvent('vehiclekeys:client:SetOwner', towPlate)
+            TriggerEvent('qb-vehiclekeys:client:AddKeys', towPlate)
+        end
+        SetModelAsNoLongerNeeded(towModel)
+    end
+
+    -- Se till att demonteringsfordonet är upplåst och startklart.
+    SetVehicleDoorsLocked(veh, 1)
+    SetVehicleDoorsLockedForAllPlayers(veh, false)
+    SetVehicleNeedsToBeHotwired(veh, false)
+    SetVehicleUndriveable(veh, false)
+    SetVehicleEngineOn(veh, false, true, false)
+
+    local plate = GetVehicleNumberPlateText(veh)
+    TriggerEvent('vehiclekeys:client:SetOwner', plate)
+    TriggerEvent('qb-vehiclekeys:client:AddKeys', plate)
+
     local netId = NetworkGetNetworkIdFromEntity(veh)
+    activeCivilianVehicleNetId = netId
     TriggerServerEvent('chopshop:server:RegisterCivilianVehicle', netId)
 
     if civilianVehicleBlip and DoesBlipExist(civilianVehicleBlip) then
@@ -532,6 +649,7 @@ RegisterNetEvent('chopshop:client:SpawnCivilianVehicle', function(vehicleData)
     EndTextCommandSetBlipName(civilianVehicleBlip)
 
     notify(t('civilian_vehicle_ready', vehicleData.label), 'success')
+    notify(t('towtruck_ready'), 'inform')
 end)
 
 -- Servern bekräftar matchning av kontraktsfordon
@@ -542,6 +660,50 @@ end)
 -- Generisk notifieringsrelay
 RegisterNetEvent('chopshop:client:Notify', function(message, notifyType)
     notify(message, notifyType)
+end)
+
+
+CreateThread(function()
+    while true do
+        Wait(0)
+
+        local ped = PlayerPedId()
+        if not IsPedInAnyVehicle(ped, false) then
+            Wait(750)
+        else
+            local vehicle = GetVehiclePedIsIn(ped, false)
+            if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then
+                Wait(500)
+            else
+                local model = GetEntityModel(vehicle)
+                if model ~= GetHashKey('towtruck2') then
+                    Wait(500)
+                else
+                    local point = Config.CivilianTowTruckDespawn
+                    local pCoords = GetEntityCoords(ped)
+                    local dist = #(pCoords - vec3(point.x, point.y, point.z))
+
+                    if dist <= 12.0 then
+                        DrawMarker(1, point.x, point.y, point.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.2, 2.2, 0.8, 0, 140, 255, 140, false, false, 2, false, nil, nil, false)
+                    end
+
+                    if dist <= 3.0 then
+                        BeginTextCommandDisplayHelp('STRING')
+                        AddTextComponentSubstringPlayerName(t('towtruck_despawn_prompt'))
+                        EndTextCommandDisplayHelp(0, false, true, -1)
+
+                        if IsControlJustReleased(0, 38) then -- E
+                            despawnVehicle(vehicle)
+                            notify(t('towtruck_despawned'), 'success')
+                            Wait(500)
+                        end
+                    else
+                        Wait(250)
+                    end
+                end
+            end
+        end
+    end
 end)
 
 -- ─── Initialisering ──────────────────────────────────────────────────────────
