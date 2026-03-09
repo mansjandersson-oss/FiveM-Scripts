@@ -429,22 +429,7 @@ RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem
         return
     end
 
-    local job     = civilianJobs[src]
-    local isCivil = job and job.active
-
-    if isCivil then
-        if giveCivilianMaterials(src, 1) < 1 then
-            notify(src, t('no_inventory_space'), 'error')
-            return
-        end
-    else
-        if not canCarry(src, partItem, 1) then
-            notify(src, t('no_inventory_space'), 'error')
-            return
-        end
-        addItem(src, partItem, 1)
-    end
-
+    -- Ingen reward per del: reward ges endast vid frame-strip.
     notify(src, t('part_stripped', t('part_' .. partName)), 'success')
 end)
 

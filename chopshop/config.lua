@@ -36,7 +36,7 @@ Config.NPCs = {
 
 -- Export för att avgöra om spelaren är laglig/kriminell.
 -- Byt ut resource/function till ert eget system (du sa att du lägger in detta manuellt).
--- Funktionens retur bör vara: 'criminal', 'civilian' eller 'both'.
+-- Stödjer retur: 'criminal'/'civilian'/'both', boolean (true=criminal), eller table med route/isCriminal/isCivilian.
 Config.RoleCheckExport = {
     resource = nil,
     func     = nil,
@@ -145,11 +145,11 @@ Config.MaterialRewards = {
 -- ─── Inställningar för skill-check minispel ──────────────────────────────────
 Config.Minigames = {
     StripPart = {
-        stages = { 'easy', 'medium' },
+        stages = { 'easy' },
         keys   = { 'w', 'a', 's', 'd' }
     },
     StripFrame = {
-        stages = { 'medium', 'hard', 'hard' },
+        stages = { 'easy', 'medium' },
         keys   = { 'w', 'a', 's', 'd' }
     }
 }

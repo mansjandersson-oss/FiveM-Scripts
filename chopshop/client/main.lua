@@ -448,26 +448,58 @@ local function spawnNPC(data, options)
     return ped
 end
 
+local function normalizeRouteResult(result)
+    if type(result) == 'string' then
+        result = result:lower()
+        if result == 'criminal' or result == 'civilian' or result == 'both' then
+            return result
+        end
+    elseif type(result) == 'boolean' then
+        return result and 'criminal' or 'civilian'
+    elseif type(result) == 'table' then
+        if result.route and type(result.route) == 'string' then
+            local route = result.route:lower()
+            if route == 'criminal' or route == 'civilian' or route == 'both' then
+                return route
+            end
+        end
+
+        local isCriminal = result.isCriminal == true
+                        or result.criminal == true
+                        or result.is_criminal == true
+        local isCivilian = result.isCivilian == true
+                        or result.civilian == true
+                        or result.is_civilian == true
+
+        if isCriminal and isCivilian then return 'both' end
+        if isCriminal then return 'criminal' end
+        if isCivilian then return 'civilian' end
+    end
+
+    return nil
+end
+
 local function getPlayerRoute()
     local roleCfg = Config.RoleCheckExport
     if not roleCfg or not roleCfg.resource or not roleCfg.func then
-        return 'both'
+        return 'civilian'
     end
 
     local exportRes = exports[roleCfg.resource]
     if not exportRes or not exportRes[roleCfg.func] then
-        return 'both'
+        return 'civilian'
     end
 
     local ok, result = pcall(function()
         return exportRes[roleCfg.func]()
     end)
 
-    if ok and (result == 'criminal' or result == 'civilian' or result == 'both') then
-        return result
+    if ok then
+        local route = normalizeRouteResult(result)
+        if route then return route end
     end
 
-    return 'both'
+    return 'civilian'
 end
 
 local function canUseCriminalOptions()
