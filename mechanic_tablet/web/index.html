@@ -10,6 +10,13 @@
       font-family: Arial, sans-serif;
     }
 
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      background: transparent !important;
+    }
+
     body {
       margin: 0;
       width: 100vw;
@@ -18,6 +25,7 @@
       background: transparent;
       display: none;
       align-items: center;
+      pointer-events: none;
       justify-content: center;
     }
 
@@ -150,7 +158,9 @@
 
     window.addEventListener('message', (event) => {
       if (event.data?.action === 'setVisible') {
-        document.body.style.display = event.data.visible ? 'flex' : 'none';
+        const visible = !!event.data.visible;
+        document.body.style.display = visible ? 'flex' : 'none';
+        document.body.style.pointerEvents = visible ? 'auto' : 'none';
 
         if (event.data.visible) {
           addressInput.value = lastUrl;

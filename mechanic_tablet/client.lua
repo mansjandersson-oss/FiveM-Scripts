@@ -11,6 +11,11 @@ local function setTabletVisible(visible)
     })
 end
 
+CreateThread(function()
+    Wait(0)
+    setTabletVisible(false)
+end)
+
 exports('useMechanicTablet', function()
     if isOpen then
         return setTabletVisible(false)
