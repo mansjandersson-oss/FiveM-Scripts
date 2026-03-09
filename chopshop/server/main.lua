@@ -324,7 +324,7 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
     if not player then return end
 
     local sellableParts = Config.Civilian.sellableParts or {
-        Config.Items.scrap_metal,
+        Config.FrameStrip.scrapItem,
         'aluminum',
         'rubber',
         'glass',

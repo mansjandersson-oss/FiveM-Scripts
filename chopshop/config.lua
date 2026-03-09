@@ -118,10 +118,6 @@ Config.FrameStrip = {
 
 -- ─── Itemnamn (måste matcha dina inventarie-items) ──────────────────────────
 Config.Items = {
-    car_door      = 'car_door',
-    car_hood      = 'car_hood',
-    car_trunk_lid = 'car_trunk_lid',
-    scrap_metal   = 'scrap_metal',
     -- Betalningsitem: sätt till det din server använder för pengar (t.ex. 'money')
     money         = 'money',
     -- Kontraktsitem som ges till spelaren när ett kriminellt kontrakt utfärdas.
