@@ -4,8 +4,6 @@ Locales = {
 
         -- Blip-etiketter
         blip_main_npc     = 'Stånk-Tommy',
-        blip_criminal_npc = 'Shady Contact',
-        blip_civilian_npc = 'Auto Dismantler',
         blip_chop_zone    = 'Bildemontering',
 
         -- NPC-interaktionsetiketter
@@ -86,8 +84,6 @@ Locales = {
         script_title = 'Chop Shop',
 
         blip_main_npc     = 'Stånk-Tommy',
-        blip_criminal_npc = 'Skum Kontakt',
-        blip_civilian_npc = 'Bilskrotare',
         blip_chop_zone    = 'Bildemontering',
 
         get_contract       = 'Hämta fordonskontrakt',
