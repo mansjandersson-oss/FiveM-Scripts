@@ -56,8 +56,16 @@ if Config.Inventory == 'qb-inventory' then
         return exports['qb-inventory']:RemoveItem(src, item, count)
     end
     countItem = function(src, item)
-        local found = exports['qb-inventory']:GetItemByName(src, item)
-        return found and found.amount or 0
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player or not Player.PlayerData or not Player.PlayerData.items then return 0 end
+
+        local total = 0
+        for _, slotItem in pairs(Player.PlayerData.items) do
+            if slotItem and slotItem.name == item then
+                total = total + (slotItem.amount or 0)
+            end
+        end
+        return total
     end
     canCarry = function(src, item, count)
         local Player = QBCore.Functions.GetPlayer(src)
@@ -318,11 +326,22 @@ RegisterNetEvent('chopshop:server:RegisterCivilianVehicle', function(netId)
     if job then job.vehicleNetId = netId end
 end)
 
-RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
-    local src    = source
-    local player = QBCore.Functions.GetPlayer(src)
-    if not player then return end
 
+local function getPartSellPrice(itemName)
+    local prices = (Config.Civilian and Config.Civilian.partPrices) or {}
+    local price = prices[itemName]
+    if type(price) == 'number' then return math.max(1, math.floor(price)) end
+
+    local fallback = Config.Civilian and Config.Civilian.rewardPerPart and Config.Civilian.rewardPerPart.min or 30
+    return math.max(1, math.floor(fallback))
+end
+
+local function getItemLabel(itemName)
+    local itemData = QBCore.Shared.Items[itemName]
+    return (itemData and itemData.label) or itemName
+end
+
+local function getSellableInventory(src)
     local sellableParts = Config.Civilian.sellableParts or {
         Config.FrameStrip.scrapItem,
         'aluminum',
@@ -332,39 +351,89 @@ RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
         'steel'
     }
 
-    local totalMaterials = 0
-    local removalQueue = {}
-
+    local result = {}
     for _, itemName in ipairs(sellableParts) do
         local count = countItem(src, itemName)
         if count and count > 0 then
-            totalMaterials = totalMaterials + count
-            removalQueue[#removalQueue + 1] = { name = itemName, count = count }
+            local price = getPartSellPrice(itemName)
+            result[#result + 1] = {
+                name = itemName,
+                label = getItemLabel(itemName),
+                count = count,
+                price = price,
+                total = count * price,
+            }
         end
     end
 
-    if totalMaterials < 1 then
+    return result
+end
+
+lib.callback.register('chopshop:server:GetSellableParts', function(src)
+    return getSellableInventory(src)
+end)
+
+RegisterNetEvent('chopshop:server:SellAutoPart', function(itemName, amount)
+    local src = source
+    amount = math.floor(tonumber(amount) or 0)
+    if type(itemName) ~= 'string' or amount < 1 then return end
+
+    local isAllowed = false
+    for _, allowed in ipairs(Config.Civilian.sellableParts or {}) do
+        if allowed == itemName then
+            isAllowed = true
+            break
+        end
+    end
+    if not isAllowed then return end
+
+    local available = countItem(src, itemName)
+    if available < amount then
+        notify(src, t('not_enough_parts_for_sale', getItemLabel(itemName), available), 'error')
+        return
+    end
+
+    if not removeItem(src, itemName, amount) then
+        notify(src, t('remove_parts_failed'), 'error')
+        return
+    end
+
+    local payout = amount * getPartSellPrice(itemName)
+    addItem(src, Config.Items.money, payout)
+    notify(src, t('sold_part_item', getItemLabel(itemName), amount, payout), 'success')
+end)
+
+local function handleSellAllAutoParts(src)
+    local sellable = getSellableInventory(src)
+
+    if #sellable < 1 then
         notify(src, t('no_auto_parts'), 'error')
         return
     end
 
-    for _, part in ipairs(removalQueue) do
-        local removed = removeItem(src, part.name, part.count)
-        if not removed then
-            notify(src, t('remove_parts_failed'), 'error')
-            return
+    local totalCount, totalPayout = 0, 0
+    for _, part in ipairs(sellable) do
+        if removeItem(src, part.name, part.count) then
+            totalCount = totalCount + part.count
+            totalPayout = totalPayout + (part.count * part.price)
         end
     end
 
-    local reward = totalMaterials * math.random(
-        Config.Civilian.rewardPerPart.min,
-        Config.Civilian.rewardPerPart.max
-    )
-    addItem(src, Config.Items.money, reward)
-    giveRandomMaterials(src)
-    civilianJobs[src] = nil
+    if totalCount < 1 then
+        notify(src, t('remove_parts_failed'), 'error')
+        return
+    end
 
-    notify(src, t('civil_parts_turned_in', totalMaterials, reward), 'success')
+    addItem(src, Config.Items.money, totalPayout)
+    notify(src, t('civil_parts_turned_in', totalCount, totalPayout), 'success')
+end
+
+RegisterNetEvent('chopshop:server:SellAllAutoParts', function()
+    handleSellAllAutoParts(source)
+end)
+
+RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
+    handleSellAllAutoParts(source)
 end)
 
 -- ─── Demonteringshändelser ───────────────────────────────────────────────────

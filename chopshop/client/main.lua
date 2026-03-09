@@ -10,6 +10,7 @@ local contractVehicles = {}   -- { entity, blip, model } för kriminella kontrak
 local civilianVehicleBlip = nil
 local activeContractData  = { vehicles = nil, completed = {} }
 local activeCivilianVehicleNetId = nil
+local markedForScrap = {}   -- [vehicleNetId] = true när bilen markerats och låsts
 
 -- ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
 
@@ -78,6 +79,19 @@ end
 local function markPartStripped(netId, name)
     if not strippedParts[netId] then strippedParts[netId] = {} end
     strippedParts[netId][name] = true
+end
+
+local function isVehicleMarkedForScrap(netId)
+    return markedForScrap[netId] == true
+end
+
+local function lockVehicleForScrap(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+
+    SetVehicleDoorsLocked(vehicle, 2)
+    SetVehicleDoorsLockedForAllPlayers(vehicle, true)
+    SetVehicleEngineOn(vehicle, false, true, true)
+    SetVehicleUndriveable(vehicle, true)
 end
 
 local function getVehicleDoorCount(vehicle)
@@ -251,6 +265,31 @@ local function applyVehicleTarget(vehicle)
     local netId   = NetworkGetNetworkIdFromEntity(vehicle)
     local options = {}
 
+    if not isVehicleMarkedForScrap(netId) then
+        options[#options + 1] = {
+            name = 'chop_mark_vehicle',
+            label = t('mark_vehicle_for_scrap'),
+            icon = 'fa-solid fa-clipboard-check',
+            distance = 3.0,
+            onSelect = function()
+                local done = runAction(t('marking_vehicle'), 2200, Config.Animations.frame)
+                if not done then notify(t('action_cancelled'), 'error'); return end
+
+                markedForScrap[netId] = true
+                lockVehicleForScrap(vehicle)
+                notify(t('vehicle_marked_for_scrap'), 'success')
+                applyVehicleTarget(vehicle)
+            end
+        }
+    end
+
+    if not isVehicleMarkedForScrap(netId) then
+        if #options > 0 then
+            exports.ox_target:addLocalEntity(vehicle, options)
+        end
+        return
+    end
+
     -- Val för demontering av delar
     for _, part in ipairs(Config.StripParts) do
         if shouldShowStripPartForVehicle(vehicle, part) and not isPartStripped(netId, part.name) then
@@ -313,6 +352,7 @@ local function applyVehicleTarget(vehicle)
                 end
 
                 strippedParts[netId] = nil
+                markedForScrap[netId] = nil
                 clearVehicleTarget(vehicle)
                 removeContractVehicleEntry(vehicle)
 
@@ -512,6 +552,62 @@ local function canUseCivilianOptions()
     return route == 'civilian' or route == 'both'
 end
 
+-- ─── Försäljningsmeny för bildelar (NUI via ox_lib context) ─────────────────
+
+local function openSellPartsMenu()
+    local sellable = lib.callback.await('chopshop:server:GetSellableParts', false)
+    if not sellable or #sellable < 1 then
+        notify(t('no_auto_parts'), 'error')
+        return
+    end
+
+    local options = {
+        {
+            title = t('sell_all_parts_title'),
+            description = t('sell_all_parts_description'),
+            icon = 'fa-solid fa-sack-dollar',
+            onSelect = function()
+                TriggerServerEvent('chopshop:server:SellAllAutoParts')
+            end
+        }
+    }
+
+    for _, entry in ipairs(sellable) do
+        options[#options + 1] = {
+            title = ('%s x%s'):format(entry.label or entry.name, entry.count),
+            description = t('sell_part_menu_line', entry.price, entry.total),
+            icon = 'fa-solid fa-box-open',
+            onSelect = function()
+                local input = lib.inputDialog(t('sell_parts_menu_title'), {
+                    {
+                        type = 'number',
+                        label = t('sell_part_amount_prompt', entry.label or entry.name),
+                        default = entry.count,
+                        min = 1,
+                        max = entry.count,
+                        required = true
+                    }
+                })
+
+                if not input then return end
+                local amount = math.floor(tonumber(input[1]) or 0)
+                if amount < 1 then return end
+
+                TriggerServerEvent('chopshop:server:SellAutoPart', entry.name, amount)
+                Wait(150)
+                openSellPartsMenu()
+            end
+        }
+    end
+
+    lib.registerContext({
+        id = 'chopshop_sell_parts_menu',
+        title = t('sell_parts_menu_title'),
+        options = options
+    })
+    lib.showContext('chopshop_sell_parts_menu')
+end
+
 -- ─── Huvud-NPC ───────────────────────────────────────────────────────────────
 
 local function setupMainNPC()
@@ -554,7 +650,7 @@ local function setupMainNPC()
             icon     = 'fa-solid fa-boxes-packing',
             distance = 2.5,
             canInteract = canUseCivilianOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:TurnInAutoParts') end
+            onSelect = openSellPartsMenu
         }
     })
 end
@@ -716,7 +812,7 @@ CreateThread(function()
                     local dist = #(pCoords - vec3(point.x, point.y, point.z))
 
                     if dist <= 12.0 then
-                        DrawMarker(1, point.x, point.y, point.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.2, 2.2, 0.8, 0, 140, 255, 140, false, false, 2, false, nil, nil, false)
+                        DrawMarker(21, point.x, point.y, point.z + 0.85, 0.0, 0.0, 0.0, 0.0, 180.0, 0.0, 0.65, 0.65, 0.65, 0, 140, 255, 180, true, true, 2, true, nil, nil, false)
                     end
 
                     if dist <= 3.0 then

@@ -22,6 +22,15 @@ Config.Civilian = {
     frameBonus    = { min = 5, max = 15  },      -- bonus i pengar-item för att demontera ramen
     -- Material som kan säljas till den civila skrotaren
     sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
+    -- Fast pris per material i säljmyn (om item saknas här används rewardPerPart.min)
+    partPrices = {
+        scrap_metal = 20,
+        aluminum = 30,
+        rubber = 20,
+        glass = 10,
+        plastic = 10,
+        steel = 30,
+    },
 }
 
 -- ─── NPC-definitioner ─────────────────────────────────────────────────────────

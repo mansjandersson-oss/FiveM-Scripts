@@ -20,6 +20,9 @@ Locales = {
 
         -- Chop-zon
         entered_chop_zone = 'Pull the vehicle in, exit it and start stripping.',
+        mark_vehicle_for_scrap = 'Mark Vehicle for Scrapping',
+        marking_vehicle        = 'Marking vehicle...',
+        vehicle_marked_for_scrap = 'Vehicle marked for scrapping. Start removing parts.',
 
         -- Etiketter för demonteringsdelar (visas i ox_target)
         strip_driver_door    = 'Strip Driver Door',
@@ -67,7 +70,14 @@ Locales = {
         civil_frame_stripped     = 'Frame fully stripped. Received x%s payment and some materials.',
         no_auto_parts            = 'You have no materials to turn in.',
         remove_parts_failed      = 'Could not remove parts from your inventory.',
-        civil_parts_turned_in    = 'Turned in %s material item(s). Received x%s payment and some materials.',
+        civil_parts_turned_in    = 'Sold %s material item(s). Received x%s payment.',
+        not_enough_parts_for_sale = 'You only have %s x%s in your inventory.',
+        sold_part_item           = 'Sold %s x%s for x%s.',
+        sell_parts_menu_title    = 'Sell Auto Parts',
+        sell_all_parts_title     = 'Sell All Parts',
+        sell_all_parts_description = 'Sell everything currently available in your inventory.',
+        sell_part_menu_line      = 'Price: x%s each • Total: x%s',
+        sell_part_amount_prompt  = 'Amount to sell (%s)',
 
         -- Feedback för demontering
         part_stripped     = 'Stripped: %s.',
@@ -97,6 +107,9 @@ Locales = {
         action_cancelled  = 'Handling avbruten.',
 
         entered_chop_zone = 'Kör in bilen, gå ur och börja plocka isär.',
+        mark_vehicle_for_scrap = 'Markera fordon för skrotning',
+        marking_vehicle        = 'Markerar fordon...',
+        vehicle_marked_for_scrap = 'Fordon markerat för skrotning. Börja plocka delar.',
 
         strip_driver_door    = 'Demontera förardörr',
         strip_passenger_door = 'Demontera passagerardörr',
@@ -140,7 +153,14 @@ Locales = {
         civil_frame_stripped     = 'Ram helt demonterad. Fick x%s betalning och lite material.',
         no_auto_parts            = 'Du har inga material att lämna in.',
         remove_parts_failed      = 'Kunde inte ta bort delar från inventariet.',
-        civil_parts_turned_in    = 'Lämnade in %s material-enhet(er). Fick x%s betalning och lite material.',
+        civil_parts_turned_in    = 'Sålde %s material-enhet(er). Fick x%s betalning.',
+        not_enough_parts_for_sale = 'Du har bara %s x%s i inventariet.',
+        sold_part_item           = 'Sålde %s x%s för x%s.',
+        sell_parts_menu_title    = 'Sälj bildelar',
+        sell_all_parts_title     = 'Sälj alla delar',
+        sell_all_parts_description = 'Sälj allt som finns tillgängligt i ditt inventarie.',
+        sell_part_menu_line      = 'Pris: x%s styck • Totalt: x%s',
+        sell_part_amount_prompt  = 'Antal att sälja (%s)',
 
         part_stripped     = 'Demonterad: %s.',
         frame_stripped    = 'Ram demonterad och fordon borttaget.',
