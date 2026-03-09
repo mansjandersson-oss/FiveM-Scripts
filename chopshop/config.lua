@@ -24,12 +24,12 @@ Config.Civilian = {
     sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
     -- Fast pris per material i säljmyn (om item saknas här används rewardPerPart.min)
     partPrices = {
-        scrap_metal = 2,
-        aluminum = 3,
-        rubber = 2,
-        glass = 1,
-        plastic = 1,
-        steel = 3,
+        scrap_metal = 20,
+        aluminum = 30,
+        rubber = 20,
+        glass = 10,
+        plastic = 10,
+        steel = 30,
     },
 }
 
