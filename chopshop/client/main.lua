@@ -257,16 +257,15 @@ end
 -- ─── Chop-zon ────────────────────────────────────────────────────────────────
 
 local function setupChopZone()
-    lib.zones.box({
-        coords   = Config.ChopZone.coords,
-        size     = Config.ChopZone.size,
-        rotation = Config.ChopZone.rotation,
-        debug    = Config.Debug,
-        onEnter  = function()
+    lib.zones.sphere({
+        coords  = Config.ChopZone.coords,
+        radius  = Config.ChopZone.radius or 30.0,
+        debug   = Config.Debug,
+        onEnter = function()
             chopZoneActive = true
             notify(t('entered_chop_zone'), 'inform')
         end,
-        onExit   = function()
+        onExit  = function()
             chopZoneActive = false
             if chopZoneVehicle and DoesEntityExist(chopZoneVehicle) then
                 clearVehicleTarget(chopZoneVehicle)

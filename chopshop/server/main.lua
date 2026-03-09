@@ -517,11 +517,8 @@ local function handleContractItemUse(src)
     notify(src, t('contract_restored'), 'success')
 end
 
-if Config.Inventory == 'qb-inventory' then
-    QBCore.Functions.CreateUseableItem(Config.Items.chop_contract, handleContractItemUse)
-else
-    exports.ox_inventory:RegisterUsableItem(Config.Items.chop_contract, handleContractItemUse)
-end
+-- Registrera usable item via QBCore för kompatibilitet (även när ox_inventory saknar RegisterUsableItem-export).
+QBCore.Functions.CreateUseableItem(Config.Items.chop_contract, handleContractItemUse)
 
 -- ─── Städning vid frånkoppling ───────────────────────────────────────────────
 

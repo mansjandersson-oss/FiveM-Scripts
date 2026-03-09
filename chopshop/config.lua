@@ -29,7 +29,7 @@ Config.NPCs = {
     main = {
         name   = 'chop_main_npc',
         model  = 'g_m_m_chigoon_01',
-        coords = vec4(258.61, -1801.29, 27.11, 52.43),
+        coords = vec4(257.55, -1801.48, 27.11, 56.98),
         blip   = { enabled = true, sprite = 61, color = 1, scale = 0.8, labelKey = 'blip_main_npc' }
     }
 }
@@ -44,9 +44,8 @@ Config.RoleCheckExport = {
 
 -- ─── Chop-zon ────────────────────────────────────────────────────────────────
 Config.ChopZone = {
-    coords                  = vec3(1174.81, -3198.67, 5.07),
-    size                    = vec3(25.0, 25.0, 4.0),
-    rotation                = 270.0,
+    coords                  = vec3(294.84, -1722.37, 29.32),
+    radius                 = 30.0,
     vehicleDetectionDistance = 8.0,   -- meter: hur nära ett fordon måste vara för att visa demonteringsval
     blip                    = { enabled = true, sprite = 50, color = 4, scale = 0.8, labelKey = 'blip_chop_zone' }
 }
