@@ -26,6 +26,6 @@ dependencies {
     'qb-core',
     'ox_target',
     'ox_lib',
-    -- Inventory: ensure either 'ox_inventory' or 'qb-inventory' is started
-    -- depending on the value of Config.Inventory in config.lua
+    -- Inventarie: säkerställ att antingen 'ox_inventory' eller 'qb-inventory' är startad
+    -- beroende på värdet i Config.Inventory i config.lua
 }
