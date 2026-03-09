@@ -97,7 +97,7 @@ Config.CivilianTowTruckSpawn = vec4(266.8, -1792.6, 27.1, 55.0)
 -- Punkt där towtruck2 kan despawnas med knapptryck
 Config.CivilianTowTruckDespawn = vec4(265.89, -1789.38, 26.73, 319.67)
 
--- ─── Delar att demontera från varje fordon ───────────────────────────────────
+-- ─── Delar att demontera från varje fordon (interaktion, ej direkt reward) ─────
 Config.StripParts = {
     { name = 'driver_door',    labelKey = 'strip_driver_door',    item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
     { name = 'passenger_door', labelKey = 'strip_passenger_door', item = 'car_door',      duration = 8000, icon = 'fa-solid fa-car-side'          },
@@ -122,7 +122,6 @@ Config.Items = {
     car_hood      = 'car_hood',
     car_trunk_lid = 'car_trunk_lid',
     scrap_metal   = 'scrap_metal',
-    auto_parts    = 'auto_parts',
     -- Betalningsitem: sätt till det din server använder för pengar (t.ex. 'money')
     money         = 'money',
     -- Kontraktsitem som ges till spelaren när ett kriminellt kontrakt utfärdas.

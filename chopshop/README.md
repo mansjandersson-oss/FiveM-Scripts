@@ -25,7 +25,7 @@ En FiveM-resurs som lägger till en immersiv chop shop-upplevelse för både **k
 1. Prata med **samma Chop-kontakt** för att få ett slumpmässigt fordon att demontera (laglig väg).
 2. Fordonet spawnar nära kontaktpunkten — kör det till **Chop-zonen**.
 3. Demontera delar på samma sätt som den kriminella vägen.
-4. Du får endast material (inte `auto_parts`) när du demonterar i civil väg.
+4. Du får endast material när du demonterar i civil väg.
 5. Ramen ger en mindre bonusbetalning automatiskt.
 6. Lämna in material hos samma NPC för att få pengar.
 
@@ -47,24 +47,6 @@ Lägg till följande items i OX Inventory `items.lua`:
 > **Obs:** Binärfiler stöds inte i den här leveransen, därför ingår inga item-bilder (`.png`) i repot. Lägg in egna ikoner i `ox_inventory/web/images/` med itemets namn som filnamn.
 
 ```lua
-['car_door'] = {
-    label = 'Bildörr',
-    weight = 8000,
-    stack = true,
-    close = true,
-},
-['car_hood'] = {
-    label = 'Motorhuv',
-    weight = 6000,
-    stack = true,
-    close = true,
-},
-['car_trunk_lid'] = {
-    label = 'Bagagelucka',
-    weight = 5000,
-    stack = true,
-    close = true,
-},
 ['scrap_metal'] = {
     label = 'Skrotmetall',
     weight = 3000,
@@ -144,7 +126,7 @@ Alla justerbara värden finns i `config.lua`:
 | `Config.ChopZone` | — | Position, storlek och rotation för chop-zonen |
 | `Config.ContractVehicles` | — | Pool med fordonsmodeller för kriminella kontrakt |
 | `Config.CivilianVehicles` | — | Pool med fordon för civila jobb |
-| `Config.StripParts` | — | Delar, items, tider och ikoner |
+| `Config.StripParts` | — | Delar, tider och ikoner för demonteringsinteraktioner |
 | `Config.Minigames` | — | Svårighetsnivåer och tangenter för skill checks |
 
 ## Språk
