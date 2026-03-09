@@ -13,6 +13,9 @@ end
 
 CreateThread(function()
     Wait(0)
+    isOpen = false
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
     setTabletVisible(false)
 end)
 

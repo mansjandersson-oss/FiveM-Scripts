@@ -110,7 +110,7 @@
     <iframe
       id="browserFrame"
       class="screen"
-      src="https://bennysnewbridge.page.gd/"
+      src="about:blank"
       title="Mekaniker surfplatta webbläsare"
       referrerpolicy="no-referrer"
     ></iframe>
@@ -148,6 +148,16 @@
       return `https://${raw}`;
     };
 
+    const loadCurrentPage = () => {
+      if (browserFrame.src !== lastUrl) {
+        browserFrame.src = lastUrl;
+      }
+    };
+
+    const unloadPage = () => {
+      browserFrame.src = 'about:blank';
+    };
+
     const navigateTo = (value) => {
       const normalized = normalizeUrl(value);
       if (!normalized) return;
@@ -162,10 +172,13 @@
         document.body.style.display = visible ? 'flex' : 'none';
         document.body.style.pointerEvents = visible ? 'auto' : 'none';
 
-        if (event.data.visible) {
+        if (visible) {
           addressInput.value = lastUrl;
+          loadCurrentPage();
           addressInput.focus();
           addressInput.select();
+        } else {
+          unloadPage();
         }
       }
     });
