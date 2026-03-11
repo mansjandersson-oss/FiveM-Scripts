@@ -402,6 +402,37 @@ end
 
 local Items = require 'modules.items.server'
 
+local walletItems, keyringItems = {}, {}
+
+for i = 1, #(server.walletitems or {}) do
+	walletItems[server.walletitems[i]] = true
+end
+
+for i = 1, #(server.keyringitems or {}) do
+	keyringItems[server.keyringitems[i]] = true
+end
+
+local function getSpecialCategory(itemName)
+	if walletItems[itemName] then return 'wallet' end
+	if keyringItems[itemName] then return 'keyring' end
+end
+
+local function isSlotCompatible(inv, slot, itemName)
+	if inv.type ~= 'player' then return true end
+	local category = getSpecialCategory(itemName)
+	local slotType = inv.specialSlotTypes and inv.specialSlotTypes[slot]
+
+	if slotType then
+		return category == slotType
+	end
+
+	return category == nil
+end
+
+local function hasWeightCapacity(inv, targetWeight)
+	return true
+end
+
 CreateThread(function()
     Inventory.accounts = server.accounts
     TriggerEvent('ox_inventory:loadInventory', Inventory)
@@ -572,6 +603,7 @@ function Inventory.Create(id, label, invType, slots, weight, maxWeight, owner, i
 		label = label or id,
 		type = invType,
 		slots = slots,
+		baseSlots = slots,
 		weight = weight,
 		maxWeight = maxWeight or shared.playerweight,
 		owner = owner,
@@ -604,6 +636,27 @@ function Inventory.Create(id, label, invType, slots, weight, maxWeight, owner, i
 		self.items, self.weight = Inventory.Load(self.dbId, invType, owner)
 	elseif weight == 0 and next(items) then
 		self.weight = Inventory.CalculateWeight(items)
+	end
+
+	if invType == 'player' then
+		self.specialSlotTypes = {}
+
+		local totalSpecial = (server.walletslots or 0) + (server.keyringslots or 0)
+		if totalSpecial > 0 then
+			local slot = self.baseSlots
+
+			for _ = 1, (server.walletslots or 0) do
+				slot += 1
+				self.specialSlotTypes[slot] = 'wallet'
+			end
+
+			for _ = 1, (server.keyringslots or 0) do
+				slot += 1
+				self.specialSlotTypes[slot] = 'keyring'
+			end
+
+			self.slots = slot
+		end
 	end
 
 	Inventories[self.id] = setmetatable(self, OxInventory)
@@ -1124,7 +1177,7 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 		local slotData = inv.items[slot]
 		slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
 
-		if not slotData or (item.stack and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata)) then
+		if isSlotCompatible(inv, slot, item.name) and (not slotData or (item.stack and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata))) then
 			toSlot = slot
 		end
 	end
@@ -1134,24 +1187,47 @@ function Inventory.AddItem(inv, item, count, metadata, slot, cb)
 		slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
 
 		for i = 1, inv.slots do
-			local slotData = items[i]
+			if isSlotCompatible(inv, i, item.name) then
+				local slotData = items[i]
 
-			if item.stack and slotData ~= nil and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata) then
-				toSlot = i
-				break
-			elseif not item.stack and not slotData then
-				if not toSlot then toSlot = {} end
-
-				toSlot[#toSlot + 1] = { slot = i, count = slotCount, metadata = slotMetadata }
-
-				if count == slotCount then
+				if item.stack and slotData ~= nil and slotData.name == item.name and table.matches(slotData.metadata, slotMetadata) then
+					toSlot = i
 					break
+				elseif not item.stack and not slotData then
+					if not toSlot then toSlot = {} end
+
+					toSlot[#toSlot + 1] = { slot = i, count = slotCount, metadata = slotMetadata }
+
+					if count == slotCount then
+						break
+					end
+
+					count -= 1
+					slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
+				elseif not toSlot and not slotData then
+					toSlot = i
+				end
+			end
+		end
+
+		if not toSlot and inv.type == 'player' then
+			local category = getSpecialCategory(item.name)
+
+			if category then
+				inv.slots += 1
+				inv.specialSlotTypes = inv.specialSlotTypes or {}
+				inv.specialSlotTypes[inv.slots] = category
+				toSlot = inv.slots
+
+				if inv.player then
+					TriggerClientEvent('ox_inventory:refreshSlotCount', inv.id, { inventoryId = inv.id, slots = inv.slots })
 				end
 
-				count -= 1
-				slotMetadata, slotCount = Items.Metadata(inv.id, item, metadata and table.clone(metadata) or {}, count)
-			elseif not toSlot and not slotData then
-				toSlot = i
+				for playerId in pairs(inv.openedBy) do
+					if playerId ~= inv.id then
+						TriggerClientEvent('ox_inventory:refreshSlotCount', playerId, { inventoryId = inv.id, slots = inv.slots })
+					end
+				end
 			end
 		end
 	end
@@ -1420,13 +1496,6 @@ function Inventory.CanCarryItem(inv, item, count, metadata)
 				if not count then count = 1 end
 				if not item.stack and emptySlots < count then return false end
 				if weight == 0 then return true end
-
-				local newWeight = inv.weight + (weight * count)
-
-				if newWeight > inv.maxWeight then
-					return false
-				end
-
 				return true
 			end
 		end
@@ -1441,8 +1510,7 @@ function Inventory.CanCarryAmount(inv, item)
 	inv = Inventory(inv) --[[@as OxInventory]]
 
     if inv and item then
-		local availableWeight = inv.maxWeight - inv.weight
-		return math.floor(availableWeight / item.weight)
+		return inv.slots
     end
 end
 
@@ -1455,9 +1523,7 @@ function Inventory.CanCarryWeight(inv, weight)
 
 	if not inv then return end
 
-	local availableWeight = inv.maxWeight - inv.weight
-	local canHold = availableWeight >= weight
-	return canHold, availableWeight
+	return true, math.huge
 end
 exports('CanCarryWeight', Inventory.CanCarryWeight)
 
@@ -1475,9 +1541,7 @@ function Inventory.CanSwapItem(inv, firstItem, firstItemCount, testItem, testIte
 	local testItemData = Inventory.GetItem(inv, testItem)
 
 	if firstItemData and testItemData and firstItemData.count >= firstItemCount then
-		local weightWithoutFirst = inv.weight - (firstItemData.weight * firstItemCount)
-		local weightWithTest = weightWithoutFirst + (testItemData.weight * testItemCount)
-		return weightWithTest <= inv.maxWeight
+		return true
 	end
 end
 exports('CanSwapItem', Inventory.CanSwapItem)
@@ -1573,7 +1637,6 @@ local function dropItem(source, playerInventory, fromData, data)
 	toData.count = data.count
 	toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
 
-    if toData.weight > shared.dropweight then return end
 
     local dropId = generateInvId('drop')
 
@@ -1717,6 +1780,14 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
         end
 
 		if fromData then
+			if not isSlotCompatible(toInventory, data.toSlot, fromData.name) then
+				return false, 'cannot_carry_other'
+			end
+
+			if toData and not isSlotCompatible(fromInventory, data.fromSlot, toData.name) then
+				return false, 'cannot_carry_other'
+			end
+
             if fromData.metadata.container and toInventory.type == 'container' then return false end
             if toData and toData.metadata.container and fromInventory.type == 'container' then return false end
 
@@ -1744,7 +1815,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				hookPayload.action = 'swap'
 
 				if not sameInventory then
-					if (toWeight <= toInventory.maxWeight and fromWeight <= fromInventory.maxWeight) then
+					if hasWeightCapacity(toInventory, toWeight) and hasWeightCapacity(fromInventory, fromWeight) then
 						if not TriggerEventHooks('swapItems', hookPayload) then return end
 
 						if containerItem then
@@ -1789,7 +1860,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				local toSlotWeight = Inventory.SlotWeight(Items(toData.name), toData)
 				local totalWeight = toInventory.weight - toData.weight + toSlotWeight
 
-				if fromInventory.type == 'container' or sameInventory or totalWeight <= toInventory.maxWeight then
+				if fromInventory.type == 'container' or sameInventory or hasWeightCapacity(toInventory, totalWeight) then
 					hookPayload.action = 'stack'
 
 					if not TriggerEventHooks('swapItems', hookPayload) then
@@ -1833,7 +1904,7 @@ lib.callback.register('ox_inventory:swapItems', function(source, data)
 				toData.slot = data.toSlot
 				toData.weight = Inventory.SlotWeight(Items(toData.name), toData)
 
-				if fromInventory.type == 'container' or sameInventory or (toInventory.weight + toData.weight <= toInventory.maxWeight) then
+				if fromInventory.type == 'container' or sameInventory or hasWeightCapacity(toInventory, toInventory.weight + toData.weight) then
 					hookPayload.action = 'move'
 
 					if not TriggerEventHooks('swapItems', hookPayload) then return end
