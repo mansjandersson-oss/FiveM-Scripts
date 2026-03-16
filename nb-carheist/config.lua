@@ -37,7 +37,7 @@ Config.Reward = {
 
 Config.Text = {
     sv = {
-        npc_target = 'Prata gällande het bil'
+        npc_target = 'Dekryptering av bil'
         menu_title = 'Svart marknad - Biljobb',
         menu_desc = 'Stjäl en bil, dekryptera den och leverera till ett gömt garage.',
         menu_accept = 'Ta uppdrag',
