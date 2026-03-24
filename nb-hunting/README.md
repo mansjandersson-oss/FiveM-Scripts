@@ -3,8 +3,8 @@
 Ett fullstack jakt-script för QBCore med dynamiska djur, levelsystem, uppdrag, butik, säljsystem, bait/calls, leaderboard, Discord-logs och exports/events.
 
 ## Features
-- **Dynamic Hunting**: Konfigurerbara djur per zon med individuell XP + loot.
-- **Level System**: Levels baserat på XP med krav för vapen, butik och progression.
+- **Dynamic Hunting**: Konfigurerbara djur per zon med individuell XP + loot (inklusive kaniner).
+- **Level System + Skill Tree**: Levels baserat på XP med skill points för att låsa upp och uppgradera perks.
 - **Hunting License**: Valbar jaktlicens innan funktioner låses upp.
 - **Hunter NPC + HTML UI**: NPC med modern HTML-meny i jaktstuga-stil för rutter, uppdrag och leaderboard.
 - **Hunting Zones**: Djur spawna i definierade zoner med habitat-beteende.
@@ -15,7 +15,8 @@ Ett fullstack jakt-script för QBCore med dynamiska djur, levelsystem, uppdrag, 
 - **Missions**: Uppdrag med mål, pengar och XP.
 - **Cutting Weapons**: Vapenkrav och reward multipliers vid styckning.
 - **Cutting Types**: Stöd i config för keybind/melee/third-eye (ox_target).
-- **Highly Configurable**: Nästan allt ligger i `config.lua`.
+- **Skill Tree Unlocks**: Två grenar (Stealth/Expertise) med många unlocks där skills påverkar gameplay (stealth, rewards, calls, bait, mission/säljbonus).
+- **Highly Configurable**: Basinställningar i `config.lua` och hela skill tree i `skilltree.lua`.
 - **Discord Logs**: Webhook-stöd för viktiga handlingar.
 - **Exports & Events**: Enkla integrationspunkter för andra scripts.
 - **Fully Translatable**: Locale-system med fallback.
@@ -55,6 +56,8 @@ Använd `config.lua` för att styra:
 - Zoner, djur, spawn rate, max alive
 - XP/level trösklar
 - Missioner
+- Skill Tree-grenar med 20+ unlocks per gren (`skilltree.lua`)
+- Skill-effekter på stealth/reward/call/bait/mission/sale
 - Utrustningsuttag i zon + automatisk borttagning utanför jaktområde
 - Butik/sälj priser och levelkrav
 - Vapenkrav och styckningsmultipliers

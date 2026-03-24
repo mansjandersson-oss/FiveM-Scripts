@@ -60,7 +60,8 @@ Config.HuntingZones = {
         spawnInterval = 30,
         animals = {
             { model = 'a_c_deer', xp = 55, rewards = { { item = Config.Items.Meat, min = 2, max = 4 }, { item = Config.Items.Leather, min = 1, max = 2 } } },
-            { model = 'a_c_boar', xp = 70, rewards = { { item = Config.Items.Meat, min = 2, max = 5 }, { item = Config.Items.Leather, min = 1, max = 3 } } }
+            { model = 'a_c_boar', xp = 70, rewards = { { item = Config.Items.Meat, min = 2, max = 5 }, { item = Config.Items.Leather, min = 1, max = 3 } } },
+            { model = 'a_c_rabbit_01', xp = 35, rewards = { { item = Config.Items.Meat, min = 1, max = 2 } } }
         }
     },
     {
@@ -72,7 +73,8 @@ Config.HuntingZones = {
         spawnInterval = 40,
         animals = {
             { model = 'a_c_coyote', xp = 65, rewards = { { item = Config.Items.Meat, min = 1, max = 3 }, { item = Config.Items.Trophy, min = 0, max = 1 } } },
-            { model = 'a_c_mtlion', xp = 110, rewards = { { item = Config.Items.Meat, min = 3, max = 6 }, { item = Config.Items.Trophy, min = 1, max = 1 } } }
+            { model = 'a_c_mtlion', xp = 110, rewards = { { item = Config.Items.Meat, min = 3, max = 6 }, { item = Config.Items.Trophy, min = 1, max = 1 } } },
+            { model = 'a_c_rabbit_01', xp = 30, rewards = { { item = Config.Items.Meat, min = 1, max = 2 } } }
         }
     }
 }
@@ -82,7 +84,7 @@ Config.Baits = {
         radius = 65.0,
         duration = 90,
         cooldown = 180,
-        allowedAnimals = { 'a_c_deer', 'a_c_boar', 'a_c_coyote' }
+        allowedAnimals = { 'a_c_deer', 'a_c_boar', 'a_c_coyote', 'a_c_rabbit_01' }
     }
 }
 
@@ -177,6 +179,14 @@ Config.Missions = {
         objective = { model = 'a_c_boar', amount = 5 },
         reward = { money = 3400, xp = 450 },
         cooldown = 70
+    },
+    {
+        id = 'rabbit_roundup',
+        label = 'Kaninjakt',
+        description = 'Jaga 6 kaniner i skogsområdena',
+        objective = { model = 'a_c_rabbit_01', amount = 6 },
+        reward = { money = 1500, xp = 260 },
+        cooldown = 25
     }
 }
 

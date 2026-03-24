@@ -6,5 +6,7 @@ CREATE TABLE IF NOT EXISTS `hunter_progress` (
   `kills` int NOT NULL DEFAULT 0,
   `cuts` int NOT NULL DEFAULT 0,
   `sold` int NOT NULL DEFAULT 0,
+  `skill_points` int NOT NULL DEFAULT 0,
+  `skill_data` longtext NULL,
   PRIMARY KEY (`citizenid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -25,6 +25,33 @@ local function sendDiscordLog(title, message, color)
     }), { ['Content-Type'] = 'application/json' })
 end
 
+
+local function getDefaultSkills()
+    local skills = {}
+    if Config.SkillTree and Config.SkillTree.skills then
+        for skillId in pairs(Config.SkillTree.skills) do
+            skills[skillId] = 0
+        end
+    end
+    return skills
+end
+
+local function getSkillBonus(data, skillId)
+    local skillCfg = Config.SkillTree and Config.SkillTree.skills and Config.SkillTree.skills[skillId]
+    if not skillCfg or not data or not data.skills then return 0.0 end
+    local level = data.skills[skillId] or 0
+    return (skillCfg.effectPerLevel or 0.0) * level
+end
+
+local function normalizeSkills(skillData)
+    local normalized = getDefaultSkills()
+    if type(skillData) ~= 'table' then return normalized end
+    for skillId in pairs(normalized) do
+        normalized[skillId] = tonumber(skillData[skillId]) or 0
+    end
+    return normalized
+end
+
 local function getLevelFromXP(xp)
     local level = 1
     for lvl, data in pairs(Config.Levels) do
@@ -47,7 +74,9 @@ local function ensureHunter(source)
         license = not Config.UseLicense,
         kills = 0,
         cuts = 0,
-        sold = 0
+        sold = 0,
+        skillPoints = 0,
+        skills = getDefaultSkills()
     }
 
     return HunterData[source]
@@ -64,6 +93,9 @@ local function addXP(source, amount)
     TriggerClientEvent('nb-hunting:client:updateStats', source, data)
 
     if data.level > oldLevel then
+        local gainedLevels = data.level - oldLevel
+        local pointsPerLevel = (Config.SkillTree and Config.SkillTree.pointsPerLevel) or 1
+        data.skillPoints = (data.skillPoints or 0) + (gainedLevels * pointsPerLevel)
         TriggerClientEvent('QBCore:Notify', source, L('level_up', data.level), 'success')
         sendDiscordLog('Hunter Level Up', ('%s reached level %s'):format(data.cid, data.level), 5763719)
     end
@@ -73,8 +105,8 @@ local function saveHunterBySource(source)
     local data = HunterData[source]
     if not data then return end
 
-    MySQL.insert.await('INSERT INTO hunter_progress (citizenid, xp, level, has_license, kills, cuts, sold) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level), has_license = VALUES(has_license), kills = VALUES(kills), cuts = VALUES(cuts), sold = VALUES(sold)', {
-        data.cid, data.xp, data.level, data.license and 1 or 0, data.kills, data.cuts, data.sold
+    MySQL.insert.await('INSERT INTO hunter_progress (citizenid, xp, level, has_license, kills, cuts, sold, skill_points, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level), has_license = VALUES(has_license), kills = VALUES(kills), cuts = VALUES(cuts), sold = VALUES(sold), skill_points = VALUES(skill_points), skill_data = VALUES(skill_data)', {
+        data.cid, data.xp, data.level, data.license and 1 or 0, data.kills, data.cuts, data.sold, data.skillPoints or 0, json.encode(data.skills or getDefaultSkills())
     })
 end
 
@@ -91,7 +123,9 @@ local function loadHunter(source)
             license = row.has_license == 1,
             kills = row.kills,
             cuts = row.cuts,
-            sold = row.sold
+            sold = row.sold,
+            skillPoints = row.skill_points or 0,
+            skills = normalizeSkills(row.skill_data and json.decode(row.skill_data) or {})
         }
     else
         HunterData[source] = nil
@@ -129,7 +163,7 @@ AddEventHandler('playerDropped', function()
 end)
 
 QBCore.Functions.CreateCallback('nb-hunting:server:getData', function(source, cb)
-    cb(ensureHunter(source), Config.Missions)
+    cb(ensureHunter(source), Config.Missions, Config.SkillTree)
 end)
 
 QBCore.Functions.CreateCallback('nb-hunting:server:getLeaderboard', function(_, cb)
@@ -177,9 +211,12 @@ RegisterNetEvent('nb-hunting:server:registerKill', function(model)
         if mission.progress >= mission.objective.amount then
             local Player = QBCore.Functions.GetPlayer(src)
             if Player then
-                Player.Functions.AddMoney('cash', mission.reward.money, 'hunt-mission')
+                local missionMoneyBonus = getSkillBonus(data, 'contractor') + getSkillBonus(data, 'prime_selection')
+                local finalMoney = math.floor(mission.reward.money * (1.0 + missionMoneyBonus))
+                Player.Functions.AddMoney('cash', finalMoney, 'hunt-mission')
             end
-            addXP(src, mission.reward.xp)
+            local missionXpBonus = getSkillBonus(data, 'contractor')
+            addXP(src, math.floor(mission.reward.xp * (1.0 + missionXpBonus)))
             TriggerClientEvent('nb-hunting:client:missionComplete', src, mission)
             sendDiscordLog('Mission Completed', ('%s completed mission %s'):format(data.cid, mission.id), 15844367)
             ActiveMissions[src] = nil
@@ -228,6 +265,11 @@ RegisterNetEvent('nb-hunting:server:cutAnimal', function(model, weapon)
                 for _, reward in ipairs(animal.rewards) do
                     local amount = math.random(reward.min, reward.max)
                     amount = math.floor(amount * cutCfg.rewardMultiplier)
+                    local bonus = getSkillBonus(data, 'reward_bonus') + getSkillBonus(data, 'clean_cut') + getSkillBonus(data, 'meat_handler') + getSkillBonus(data, 'master_skinner') + getSkillBonus(data, 'precision_butcher')
+                    if reward.item == Config.Items.Trophy then
+                        bonus = bonus + getSkillBonus(data, 'trophy_eye') + getSkillBonus(data, 'rare_harvest')
+                    end
+                    amount = math.floor(amount * (1.0 + bonus))
                     if amount > 0 then
                         exports.ox_inventory:AddItem(src, reward.item, amount)
                     end
@@ -241,6 +283,35 @@ RegisterNetEvent('nb-hunting:server:cutAnimal', function(model, weapon)
     end
 end)
 
+
+RegisterNetEvent('nb-hunting:server:upgradeSkill', function(skillId)
+    local src = source
+    local data = ensureHunter(src)
+    if not data or not Config.SkillTree or not Config.SkillTree.enabled then return end
+
+    local skillCfg = Config.SkillTree.skills and Config.SkillTree.skills[skillId]
+    if not skillCfg then return end
+
+    local current = (data.skills and data.skills[skillId]) or 0
+    if data.skillPoints <= 0 then
+        TriggerClientEvent('QBCore:Notify', src, L('skill_no_points'), 'error')
+        return
+    end
+    if current >= (skillCfg.maxLevel or 1) then
+        TriggerClientEvent('QBCore:Notify', src, L('skill_maxed'), 'error')
+        return
+    end
+    if data.level < (skillCfg.unlockLevel or 1) then
+        TriggerClientEvent('QBCore:Notify', src, L('skill_locked_level', skillCfg.unlockLevel or 1), 'error')
+        return
+    end
+
+    data.skills[skillId] = current + 1
+    data.skillPoints = data.skillPoints - 1
+    TriggerClientEvent('nb-hunting:client:updateStats', src, data)
+    TriggerClientEvent('QBCore:Notify', src, L('skill_upgraded', skillCfg.label, data.skills[skillId]), 'success')
+end)
+
 RegisterNetEvent('nb-hunting:server:sellItem', function(item, amount, price)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
@@ -250,7 +321,8 @@ RegisterNetEvent('nb-hunting:server:sellItem', function(item, amount, price)
     local removed = exports.ox_inventory:RemoveItem(src, item, amount)
     if not removed then return end
 
-    local total = amount * price
+    local saleBonus = getSkillBonus(data, 'prime_selection') + getSkillBonus(data, 'zone_specialist')
+    local total = math.floor(amount * price * (1.0 + saleBonus))
     Player.Functions.AddMoney('cash', total, 'hunt-sale')
     data.sold = data.sold + total
     addXP(src, math.floor(total / 20))

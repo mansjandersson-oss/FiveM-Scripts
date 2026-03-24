@@ -21,7 +21,11 @@ Locales = {
         loadout_request = 'Pick up hunting loadout',
         loadout_received = 'Hunting loadout collected.',
         loadout_removed = 'You left the hunting area. Temporary hunting loadout removed.',
-        loadout_denied_level = 'Your level is too low for hunting loadout.'
+        loadout_denied_level = 'Your level is too low for hunting loadout.',
+        skill_no_points = 'You have no skill points.',
+        skill_maxed = 'This skill is already maxed.',
+        skill_locked_level = 'This skill unlocks at level %s.',
+        skill_upgraded = 'Upgraded %s to level %s.'
     },
     sv = {
         hunter_title = 'Jaktgillet',
@@ -45,7 +49,11 @@ Locales = {
         loadout_request = 'Hämta jaktutrustning',
         loadout_received = 'Du hämtade ut jaktutrustning.',
         loadout_removed = 'Du lämnade jaktområdet. Tillfällig jaktutrustning togs bort.',
-        loadout_denied_level = 'Din level är för låg för jaktutrustning.'
+        loadout_denied_level = 'Din level är för låg för jaktutrustning.',
+        skill_no_points = 'Du har inga skill points.',
+        skill_maxed = 'Denna skill är redan maxad.',
+        skill_locked_level = 'Denna skill låses upp på level %s.',
+        skill_upgraded = 'Uppgraderade %s till level %s.'
     }
 }
 

@@ -20,6 +20,7 @@ files {
 shared_scripts {
     '@ox_lib/init.lua',
     'locales/locale.lua',
+    'skilltree.lua',
     'config.lua'
 }
 

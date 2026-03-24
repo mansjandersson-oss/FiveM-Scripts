@@ -4,6 +4,8 @@ const stats = document.getElementById('stats');
 const missions = document.getElementById('missions');
 const zones = document.getElementById('zones');
 const leaderboard = document.getElementById('leaderboard');
+const skills = document.getElementById('skills');
+const skillPoints = document.getElementById('skillPoints');
 const closeBtn = document.getElementById('closeBtn');
 const licenseBtn = document.getElementById('licenseBtn');
 const loadoutBtn = document.getElementById('loadoutBtn');
@@ -26,7 +28,13 @@ function card(titleText, descText, buttonText, onClick) {
   if (buttonText) {
     const btn = document.createElement('button');
     btn.textContent = buttonText;
-    btn.addEventListener('click', onClick);
+    if (typeof onClick === 'function') {
+      btn.addEventListener('click', onClick);
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.55';
+      btn.style.cursor = 'not-allowed';
+    }
     el.appendChild(btn);
   }
   return el;
@@ -51,6 +59,42 @@ function render(payload) {
   leaderboard.innerHTML = '';
   (payload.leaderboard || []).forEach((row, index) => {
     leaderboard.appendChild(card(`#${index + 1} ${row.citizenid}`, `XP: ${row.xp} | Lvl: ${row.level} | Kills: ${row.kills}`));
+  });
+
+
+  skills.innerHTML = '';
+  const tree = payload.skillTree?.skills || {};
+  const branches = payload.skillTree?.branches || {};
+  const availablePoints = data.skillPoints || 0;
+  skillPoints.textContent = `Skill Points: ${availablePoints}`;
+
+  Object.entries(branches).forEach(([branchId, branchCfg]) => {
+    const branchWrap = document.createElement('div');
+    branchWrap.className = 'branch-wrap';
+    const branchTitle = document.createElement('h3');
+    branchTitle.textContent = branchCfg.label || branchId;
+    branchWrap.appendChild(branchTitle);
+
+    const branchList = document.createElement('div');
+    branchList.className = 'list';
+
+    Object.entries(tree)
+      .filter(([, cfg]) => (cfg.branch || 'General') === branchId)
+      .forEach(([skillId, cfg]) => {
+        const currentLevel = (data.skills && data.skills[skillId]) || 0;
+        const locked = data.level < (cfg.unlockLevel || 1);
+        const maxed = currentLevel >= (cfg.maxLevel || 1);
+        const label = `${cfg.label} (${currentLevel}/${cfg.maxLevel})`;
+        const desc = `${cfg.description} • Unlock level: ${cfg.unlockLevel}`;
+        const btnText = locked ? 'Låst' : (maxed ? 'Maxad' : 'Uppgradera');
+        const btnAction = (!locked && !maxed && availablePoints > 0)
+          ? () => nuiPost('upgradeSkill', { skillId })
+          : null;
+        branchList.appendChild(card(label, desc, btnText, btnAction));
+      });
+
+    branchWrap.appendChild(branchList);
+    skills.appendChild(branchWrap);
   });
 
   loadoutBtn.textContent = payload.labels?.requestLoadout || 'Hämta jaktutrustning';

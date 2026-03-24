@@ -25,6 +25,14 @@ local function canUseWeapon(weaponName)
     return hunterData and hunterData.level >= required
 end
 
+local function getSkillBonus(skillId)
+    if not hunterData or not hunterData.skills then return 0.0 end
+    local skillCfg = Config.SkillTree and Config.SkillTree.skills and Config.SkillTree.skills[skillId]
+    if not skillCfg then return 0.0 end
+    local level = hunterData.skills[skillId] or 0
+    return (skillCfg.effectPerLevel or 0.0) * level
+end
+
 local function closeHunterMenu()
     if not menuOpen then return end
     menuOpen = false
@@ -32,7 +40,7 @@ local function closeHunterMenu()
     SendNUIMessage({ action = 'close' })
 end
 
-local function openHunterMenu(data, missions, leaderboard)
+local function openHunterMenu(data, missions, leaderboard, skillTree)
     menuOpen = true
     SetNuiFocus(true, true)
     SendNUIMessage({
@@ -44,6 +52,7 @@ local function openHunterMenu(data, missions, leaderboard)
             missions = missions,
             leaderboard = leaderboard,
             zones = Config.HuntingZones,
+            skillTree = skillTree,
             labels = {
                 title = L('hunter_title'),
                 buyLicense = L('buy_license'),
@@ -110,8 +119,11 @@ local function animalBehaviour(entity, zone)
             Wait(1000)
             local playerPed = PlayerPedId()
             local dist = #(GetEntityCoords(playerPed) - GetEntityCoords(entity))
-            if dist < 12.0 and not IsPedStealthMovement(playerPed) then
-                if math.random(1, 100) > 70 then
+            local noiseReduction = (IsPedCurrentWeaponSilenced(playerPed) and getSkillBonus('suppressor') or 0.0) + getSkillBonus('camouflage') + getSkillBonus('silent_steps') + getSkillBonus('leaf_shadow')
+            local detectionRange = 12.0 * (1.0 - math.min(0.75, noiseReduction))
+
+            if dist < detectionRange and not IsPedStealthMovement(playerPed) then
+                if math.random(1, 100) > (70 + math.floor(noiseReduction * 20)) then
                     TaskCombatPed(entity, playerPed, 0, 16)
                 else
                     TaskSmartFleePed(entity, playerPed, 120.0, -1, false, false)
@@ -177,18 +189,22 @@ local function useAnimalCall(itemName)
         return
     end
 
-    callCooldowns[itemName] = GetGameTimer() + (cfg.cooldown * 1000)
+    local cooldownReduction = getSkillBonus('call_master') + getSkillBonus('tracking_lore')
+    local callRangeBonus = getSkillBonus('tracking_lore') + getSkillBonus('wind_reader')
+    local pingDurationBonus = getSkillBonus('call_master')
+
+    callCooldowns[itemName] = GetGameTimer() + (math.max(10, cfg.cooldown * (1.0 - cooldownReduction)) * 1000)
     local pCoords = GetEntityCoords(PlayerPedId())
 
     for ped, data in pairs(spawnedAnimals) do
         if DoesEntityExist(ped) and not IsEntityDead(ped) then
             for _, model in ipairs(cfg.targetModels) do
-                if data.model == model and #(GetEntityCoords(ped) - pCoords) < 250.0 then
+                if data.model == model and #(GetEntityCoords(ped) - pCoords) < (250.0 + (250.0 * callRangeBonus)) then
                     local blip = AddBlipForEntity(ped)
                     SetBlipColour(blip, 1)
                     SetBlipScale(blip, 0.7)
                     CreateThread(function()
-                        Wait(cfg.pingDuration * 1000)
+                        Wait(math.floor(cfg.pingDuration * (1.0 + pingDurationBonus)) * 1000)
                         RemoveBlip(blip)
                     end)
                 end
@@ -204,16 +220,18 @@ local function deployBait()
     local baitCfg = Config.Baits[Config.Items.Bait]
     if not baitCfg then return end
 
-    baitCooldown = GetGameTimer() + (baitCfg.cooldown * 1000)
+    local baitRadiusBonus = getSkillBonus('bait_master')
+    local baitDurationBonus = getSkillBonus('bait_master') + getSkillBonus('hunter_patience')
+    baitCooldown = GetGameTimer() + (math.max(10, baitCfg.cooldown * (1.0 - getSkillBonus('bait_master'))) * 1000)
     local pCoords = GetEntityCoords(PlayerPedId())
     QBCore.Functions.Notify(L('bait_used'), 'success')
 
     CreateThread(function()
-        local endTime = GetGameTimer() + (baitCfg.duration * 1000)
+        local endTime = GetGameTimer() + math.floor(baitCfg.duration * (1.0 + baitDurationBonus)) * 1000
         while GetGameTimer() < endTime do
             Wait(1500)
             for ped, _ in pairs(spawnedAnimals) do
-                if DoesEntityExist(ped) and not IsEntityDead(ped) and #(GetEntityCoords(ped) - pCoords) <= baitCfg.radius then
+                if DoesEntityExist(ped) and not IsEntityDead(ped) and #(GetEntityCoords(ped) - pCoords) <= (baitCfg.radius * (1.0 + baitRadiusBonus)) then
                     TaskGoStraightToCoord(ped, pCoords.x, pCoords.y, pCoords.z, 1.0, -1, 0.0, 0.0)
                 end
             end
@@ -222,10 +240,10 @@ local function deployBait()
 end
 
 RegisterNetEvent('nb-hunting:client:openHunterMenu', function()
-    QBCore.Functions.TriggerCallback('nb-hunting:server:getData', function(data, missions)
+    QBCore.Functions.TriggerCallback('nb-hunting:server:getData', function(data, missions, skillTree)
         hunterData = data
         QBCore.Functions.TriggerCallback('nb-hunting:server:getLeaderboard', function(rows)
-            openHunterMenu(data, missions, rows)
+            openHunterMenu(data, missions, rows, skillTree)
         end)
     end)
 end)
@@ -242,6 +260,13 @@ end)
 
 RegisterNUICallback('requestLoadout', function(_, cb)
     TriggerServerEvent('nb-hunting:server:requestLoadout')
+    cb('ok')
+end)
+
+RegisterNUICallback('upgradeSkill', function(payload, cb)
+    if payload and payload.skillId then
+        TriggerServerEvent('nb-hunting:server:upgradeSkill', payload.skillId)
+    end
     cb('ok')
 end)
 
@@ -293,7 +318,7 @@ RegisterNetEvent('nb-hunting:client:cutAnimal', function(entity, model)
     end
 
     local success = lib.progressBar({
-        duration = 5000,
+        duration = math.max(2000, math.floor(5000 * (1.0 - getSkillBonus('field_dressing') - getSkillBonus('clean_cut')))),
         label = L('cut_started'),
         useWhileDead = false,
         canCancel = true,
