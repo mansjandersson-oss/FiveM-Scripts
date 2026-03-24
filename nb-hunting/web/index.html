@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NB Hunting</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app" class="hidden">
+    <div class="panel">
+      <div class="wood-overlay"></div>
+      <div class="header">
+        <div>
+          <h1 id="title">Jaktstugan</h1>
+          <p class="subtitle">Välkommen till jägarnas samlingsplats</p>
+        </div>
+        <button id="closeBtn" aria-label="Stäng meny">✕</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="columns">
+        <section>
+          <h2>Uppdrag</h2>
+          <div id="missions" class="list"></div>
+        </section>
+        <section>
+          <h2>Jaktzoner</h2>
+          <div id="zones" class="list"></div>
+        </section>
+        <section>
+          <h2>Topplista</h2>
+          <div id="leaderboard" class="list"></div>
+        </section>
+      </div>
+      <section class="skilltree">
+        <h2>Skill Tree</h2>
+        <div id="skillPoints" class="skill-points"></div>
+        <div id="skills" class="list"></div>
+      </section>
+      <div class="footer">
+        <button id="loadoutBtn" class="secondary">Hämta jaktutrustning</button>
+        <button id="licenseBtn" class="primary hidden">Köp jaktlicens</button>
+      </div>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
