@@ -6,7 +6,6 @@ local strippedParts    = {}   -- [vehicleNetId] = { partName = true, ... }
 local chopZoneActive   = false
 local chopZoneVehicle  = nil  -- fordon som just nu står parkerat och demonteras
 local npcEntities      = {}   -- spawnade NPC-ped handles
-local contractVehicles = {}   -- { entity, blip, model } för kriminella kontraktsspawns
 local civilianVehicleBlip = nil
 local activeContractData  = { vehicles = nil, completed = {} }
 local activeCivilianVehicleNetId = nil
@@ -206,16 +205,6 @@ local function clearVehicleTarget(vehicle)
     exports.ox_target:removeLocalEntity(vehicle, names)
 end
 
-local function removeContractVehicleEntry(vehicle)
-    for i, cv in ipairs(contractVehicles) do
-        if cv.entity == vehicle then
-            if DoesBlipExist(cv.blip) then RemoveBlip(cv.blip) end
-            table.remove(contractVehicles, i)
-            return
-        end
-    end
-end
-
 local function despawnVehicle(vehicle)
     if not DoesEntityExist(vehicle) then return end
     if not NetworkHasControlOfEntity(vehicle) then
@@ -354,7 +343,6 @@ local function applyVehicleTarget(vehicle)
                 strippedParts[netId] = nil
                 markedForScrap[netId] = nil
                 clearVehicleTarget(vehicle)
-                removeContractVehicleEntry(vehicle)
 
                 if civilianVehicleBlip and DoesBlipExist(civilianVehicleBlip) then
                     RemoveBlip(civilianVehicleBlip)
@@ -531,6 +519,9 @@ local function getPlayerRoute()
     end
 
     local ok, result = pcall(function()
+        if roleCfg.passServerId then
+            return exportRes[roleCfg.func](GetPlayerServerId(PlayerId()))
+        end
         return exportRes[roleCfg.func]()
     end)
 

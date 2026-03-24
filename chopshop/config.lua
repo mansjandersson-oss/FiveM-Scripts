@@ -24,12 +24,12 @@ Config.Civilian = {
     sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
     -- Fast pris per material i säljmyn (om item saknas här används rewardPerPart.min)
     partPrices = {
-        scrap_metal = 20,
-        aluminum = 30,
-        rubber = 20,
-        glass = 10,
-        plastic = 10,
-        steel = 30,
+        scrap_metal = 2,
+        aluminum = 3,
+        rubber = 2,
+        glass = 1,
+        plastic = 1,
+        steel = 3,
     },
 }
 
@@ -47,8 +47,10 @@ Config.NPCs = {
 -- Byt ut resource/function till ert eget system (du sa att du lägger in detta manuellt).
 -- Stödjer retur: 'criminal'/'civilian'/'both', boolean (true=criminal), eller table med route/isCriminal/isCivilian.
 Config.RoleCheckExport = {
-    resource = nil,
-    func     = nil,
+    resource = 'nb-skilltree',
+    func     = 'GetActiveAlignment',
+    -- Sätt till true om exporten förväntar sig source/server-id som första argument.
+    passServerId = true,
 }
 
 -- ─── Chop-zon ────────────────────────────────────────────────────────────────
