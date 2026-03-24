@@ -10,8 +10,8 @@ Config.Inventory = 'ox_inventory'
 Config.Criminal = {
     vehicleCount  = 3,       -- fordon per kontrakt
     cooldown      = 1800,    -- sekunder innan ett nytt kontrakt är tillgängligt
-    minReward     = 50,      -- minsta antal pengar-item som betalas vid inlämning
-    maxReward     = 100,     -- högsta antal pengar-item som betalas vid inlämning
+    minReward     = 500,      -- minsta antal pengar-item som betalas vid inlämning
+    maxReward     = 1000,     -- högsta antal pengar-item som betalas vid inlämning
     policeRequired = 0,      -- minsta antal poliser i tjänst
 }
 
@@ -19,7 +19,7 @@ Config.Criminal = {
 Config.Civilian = {
     cooldown      = 600,                         -- sekunder mellan jobb
     rewardPerPart = { min = 1, max = 3   },      -- antal pengar-item per sålt material
-    frameBonus    = { min = 5, max = 15  },      -- bonus i pengar-item för att demontera ramen
+    frameBonus    = { min = 50, max = 150  },      -- bonus i pengar-item för att demontera ramen
     -- Material som kan säljas till den civila skrotaren
     sellableParts = { 'scrap_metal', 'aluminum', 'rubber', 'glass', 'plastic', 'steel' },
     -- Fast pris per material i säljmyn (om item saknas här används rewardPerPart.min)
