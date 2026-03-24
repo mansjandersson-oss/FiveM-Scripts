@@ -10,10 +10,10 @@ Config.MissionGiver = {
 }
 
 Config.VehicleModels = {
-    `sultan`,
-    `schafter2`,
-    `tailgater`,
-    `felon`
+    `jester`,
+    `penumbra2`,
+    `tailgater2`,
+    `ellie`
 }
 
 Config.VehicleSpawns = {
@@ -32,12 +32,12 @@ Config.MinPolice = 1
 
 Config.Reward = {
     type = 'cash', -- cash | bank
-    amount = 9000
+    amount = 18000
 }
 
 Config.Text = {
     sv = {
-        npc_target = 'Prata om biljobb',
+        npc_target = 'Dekryptering av bil'
         menu_title = 'Svart marknad - Biljobb',
         menu_desc = 'Stjäl en bil, dekryptera den och leverera till ett gömt garage.',
         menu_accept = 'Ta uppdrag',
