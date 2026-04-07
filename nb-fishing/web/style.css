@@ -1,0 +1,83 @@
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+#game {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle, rgba(11, 24, 41, 0.36) 0%, rgba(1, 7, 14, 0.6) 60%);
+}
+
+.panel {
+  width: 320px;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(5, 12, 22, 0.92);
+  border: 1px solid rgba(129, 194, 255, 0.4);
+  box-shadow: 0 12px 45px rgba(0, 0, 0, 0.45);
+}
+
+.title {
+  text-align: center;
+  color: #cce9ff;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.meter-wrap {
+  position: relative;
+  height: 300px;
+  border-radius: 10px;
+  border: 1px solid rgba(123, 166, 198, 0.5);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(35, 66, 107, 0.75), rgba(11, 21, 32, 0.8));
+}
+
+#fish {
+  position: absolute;
+  left: 45%;
+  width: 32px;
+  height: 18px;
+  background: #fbc96f;
+  border: 2px solid #8a5312;
+  border-radius: 12px;
+  transform: translateX(-50%);
+}
+
+#bar {
+  position: absolute;
+  width: 100%;
+  background: rgba(86, 216, 141, 0.4);
+  border-top: 2px solid rgba(108, 242, 163, 0.95);
+  border-bottom: 2px solid rgba(108, 242, 163, 0.95);
+}
+
+.capture-wrap {
+  margin-top: 10px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+#capture {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #68f0a6, #8af9d5);
+}
+
+.hint {
+  color: #9bc6eb;
+  text-align: center;
+  font-size: 12px;
+  margin-top: 8px;
+}
