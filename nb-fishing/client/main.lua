@@ -36,8 +36,8 @@ local function openSkillMenu()
 
     local options = {
         {
-            title = ('Level %s - XP %s'):format(PlayerData.level, PlayerData.xp),
-            description = ('Skill points available: %s'):format(PlayerData.skillPoints),
+            title = ('Nivå %s - XP %s'):format(PlayerData.level, PlayerData.xp),
+            description = ('Tillgängliga skill-poäng: %s'):format(PlayerData.skillPoints),
             disabled = true
         }
     }
@@ -57,7 +57,7 @@ local function openSkillMenu()
 
     lib.registerContext({
         id = 'nb_fishing_skill_menu',
-        title = 'Fishing Skills',
+        title = 'Fiskeskills',
         options = options
     })
     lib.showContext('nb_fishing_skill_menu')
@@ -66,7 +66,7 @@ end
 local function startFishing()
     local zone = getClosestZone()
     if not zone then
-        QBCore.Functions.Notify('You need to stand near a fishing zone.', 'error')
+        QBCore.Functions.Notify('Du måste stå nära en fiskezon.', 'error')
         return
     end
 
@@ -97,7 +97,7 @@ RegisterNetEvent('nb-fishing:client:openLeaderboard', function(rows)
     for i, row in ipairs(rows) do
         options[#options + 1] = {
             title = ('#%s %s'):format(i, row.citizenid),
-            description = ('Lvl %s | XP %s | Caught %s | Best %.2fkg'):format(row.level, row.xp, row.total_caught, row.best_weight),
+            description = ('Nivå %s | XP %s | Fångat %s | Bäst %.2fkg'):format(row.level, row.xp, row.total_caught, row.best_weight),
             icon = 'fish'
         }
     end
@@ -171,7 +171,7 @@ CreateThread(function()
                 {
                     name = ('fish_shop_%s'):format(shop.label),
                     icon = 'fa-solid fa-fish',
-                    label = 'Open Fishing Shop',
+                    label = 'Öppna fiskehandel',
                     onSelect = function()
                         exports.ox_inventory:openInventory('shop', { type = 'Fishing', id = 1 })
                     end
@@ -196,7 +196,7 @@ CreateThread(function()
         {
             name = 'fish_sell_npc',
             icon = 'fa-solid fa-sack-dollar',
-            label = 'Sell All Fish',
+            label = 'Sälj all fisk',
             distance = npcCfg.targetRadius or 2.0,
             onSelect = function()
                 TriggerServerEvent('nb-fishing:server:sellInventoryFish')
@@ -205,7 +205,7 @@ CreateThread(function()
         {
             name = 'fish_skill_npc',
             icon = 'fa-solid fa-chart-line',
-            label = 'Open Fishing Skills',
+            label = 'Öppna fiskeskills',
             distance = npcCfg.targetRadius or 2.0,
             onSelect = function()
                 openSkillMenu()

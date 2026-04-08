@@ -1,28 +1,30 @@
 local Translations = {
-    en = {
-        no_rod = 'You need a fishing rod.',
-        no_bait = 'You need bait to fish here.',
-        level_locked = 'Fishing level too low for this water.',
-        cast_started = 'Line cast... keep focus!',
-        catch_success = 'You caught a [%s | %s] %s (%.2fkg)!',
-        catch_failed = 'The fish got away.',
-        xp_gain = '+%s fishing XP',
-        skill_point = 'You gained a fishing skill point.',
-        level_up = 'Fishing level up! You are now level %s.',
-        sold_fish = 'Sold fish for $%s.',
-        tournament_started = 'Fishing tournament started! Land your best fish.',
-        tournament_ended = 'Tournament finished. Check the leaderboard for winners.',
-        already_maxed = 'Skill is already maxed.',
-        no_points = 'No skill points available.',
-        skill_upgraded = 'Upgraded %s to level %s.',
-        leaderboard_title = 'Fishing Leaderboard'
+    sv = {
+        no_rod = 'Du behöver ett fiskespö.',
+        no_bait = 'Du behöver bete för att fiska här.',
+        level_locked = 'Din fisknivå är för låg för detta vatten.',
+        cast_started = 'Kastat ut linan... håll fokus!',
+        catch_success = 'Du fångade en [%s | %s] %s (%.2fkg)!',
+        catch_failed = 'Fisken slet sig.',
+        rod_broken = 'Ditt fiskespö gick sönder.',
+        rod_durability = 'Spö-hållbarhet: %s/%s användningar',
+        xp_gain = '+%s fiske-XP',
+        skill_point = 'Du fick en fiskeskill-poäng.',
+        level_up = 'Nivå upp i fiske! Du är nu nivå %s.',
+        sold_fish = 'Sålde fisk för $%s.',
+        tournament_started = 'Fisketurnering startad! Fånga din största fisk.',
+        tournament_ended = 'Turneringen är slut. Kolla topplistan för vinnare.',
+        already_maxed = 'Denna skill är redan maxad.',
+        no_points = 'Du har inga skill-poäng kvar.',
+        skill_upgraded = 'Uppgraderade %s till nivå %s.',
+        leaderboard_title = 'Fiske-topplista'
     }
 }
 
-local locale = Config and Config.Locale or 'en'
+local locale = Config and Config.Locale or 'sv'
 
 function L(key, ...)
-    local dict = Translations[locale] or Translations.en
+    local dict = Translations[locale] or Translations.sv
     local phrase = dict[key] or key
     if select('#', ...) > 0 then
         return phrase:format(...)

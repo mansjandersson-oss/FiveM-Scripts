@@ -3,7 +3,7 @@ game 'gta5'
 
 name 'nb-fishing'
 author 'Codex'
-description 'Comprehensive customizable fishing system with Stardew-inspired minigame, skills, and leaderboard'
+description 'Omfattande konfigurerbart fiskesystem med Stardew-inspirerat minispel, skills och topplista'
 version '1.0.0'
 
 lua54 'yes'

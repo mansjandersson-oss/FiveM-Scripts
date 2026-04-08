@@ -175,6 +175,43 @@ local function getSizeClass(fish, weight)
     return selected
 end
 
+
+local function applyRodDurability(source, rodSlot, didCatch)
+    if not Config.UseDurability or not rodSlot then return true end
+
+    local baseUses = (Config.RodDurability and Config.RodDurability.BaseUses) or 100
+    local catchLoss = (Config.RodDurability and Config.RodDurability.CatchLoss) or 2
+    local escapeLoss = (Config.RodDurability and Config.RodDurability.EscapeLoss) or 7
+
+    local metadata = rodSlot.metadata or {}
+    local usesLeft = tonumber(metadata.rod_uses)
+    if not usesLeft then
+        usesLeft = baseUses
+    end
+
+    local data = ensurePlayerData(source)
+    local maintenanceBonus = getSkillBonus(data, 'rod_maintenance')
+    local rawLoss = didCatch and catchLoss or escapeLoss
+    local loss = math.max(1, math.floor(rawLoss * (1.0 - maintenanceBonus) + 0.5))
+    usesLeft = usesLeft - loss
+
+    if usesLeft <= 0 then
+        exports.ox_inventory:RemoveItem(source, Config.Items.Rod, 1, nil, rodSlot.slot)
+        TriggerClientEvent('QBCore:Notify', source, L('rod_broken'), 'error')
+        return false
+    end
+
+    local durabilityPercent = math.floor((usesLeft / baseUses) * 100)
+    metadata.rod_uses = usesLeft
+    metadata.durability = durabilityPercent
+
+    exports.ox_inventory:SetMetadata(source, rodSlot.slot, metadata)
+    exports.ox_inventory:SetDurability(source, rodSlot.slot, durabilityPercent)
+    TriggerClientEvent('QBCore:Notify', source, L('rod_durability', usesLeft, baseUses), 'primary')
+
+    return true
+end
+
 local function weightedSpecies(speciesList, trophyBonus)
     local weighted = {}
     local total = 0
@@ -267,19 +304,15 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
     local zone = getZoneById(payload.zoneId)
     if not zone then return end
 
-    local maintenanceBonus = getSkillBonus(data, 'rod_maintenance')
-    local durabilityLoss = Config.BaseRodDurabilityLoss * (1.0 - maintenanceBonus)
-    if Config.UseDurability then
-        local slot = exports.ox_inventory:GetSlotWithItem(src, Config.Items.Rod, nil, false)
-        if slot and slot.metadata and slot.metadata.durability then
-            exports.ox_inventory:SetDurability(src, slot.slot, math.max(0, slot.metadata.durability - durabilityLoss))
-        end
-    end
+    local rodSlot = exports.ox_inventory:GetSlotWithItem(src, Config.Items.Rod, nil, false)
 
     if not payload.success then
+        applyRodDurability(src, rodSlot, false)
         TriggerClientEvent('QBCore:Notify', src, L('catch_failed'), 'error')
         return
     end
+
+    applyRodDurability(src, rodSlot, true)
 
     local fish = payload.fish
     local weight = tonumber(payload.weight) or fish.minWeight
@@ -325,7 +358,7 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
         end
     end
 
-    sendDiscordLog('Fish Caught', ('%s caught %s %.2fkg'):format(data.cid, fish.item, weight), isPerfect and 3066993 or 3447003)
+    sendDiscordLog('Fisk fångad', ('%s fångade %s %.2fkg'):format(data.cid, fish.item, weight), isPerfect and 3066993 or 3447003)
     syncPlayer(src)
 end)
 
@@ -428,7 +461,7 @@ local function finalizeTournament()
             if Player then
                 Player.Functions.AddMoney('cash', payout.cash, 'fishing-tournament')
                 addXP(winner.source, payout.xp)
-                TriggerClientEvent('QBCore:Notify', winner.source, ('Tournament #%s reward received!'):format(place), 'success')
+                TriggerClientEvent('QBCore:Notify', winner.source, ('Turneringspris #%s mottaget!'):format(place), 'success')
             end
         end
     end
@@ -500,14 +533,14 @@ exports(Config.Exports.GetFishingXP, function(source)
 end)
 
 lib.addCommand('fishlb', {
-    help = 'Show fishing leaderboard'
+    help = 'Visa fiske-topplista'
 }, function(source)
     local rows = MySQL.query.await('SELECT citizenid, level, xp, total_caught, best_weight FROM fishing_progress ORDER BY xp DESC LIMIT 10')
     TriggerClientEvent('nb-fishing:client:openLeaderboard', source, rows)
 end)
 
 lib.addCommand('fishadmin_start_tourney', {
-    help = 'Force start fishing tournament',
+    help = 'Tvinga igång fisketurnering',
     restricted = 'group.admin'
 }, function()
     if not Tournament.active then

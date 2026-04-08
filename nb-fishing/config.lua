@@ -1,12 +1,16 @@
 Config = {}
 
 Config.Debug = false
-Config.Locale = 'en'
+Config.Locale = 'sv'
 Config.AutoSaveInterval = 5 -- minutes
 
 Config.UseSkillChecks = true
 Config.UseDurability = true
-Config.BaseRodDurabilityLoss = 0.02
+Config.RodDurability = {
+    BaseUses = 100,
+    CatchLoss = 2,
+    EscapeLoss = 7
+}
 Config.DefaultCatchWindow = 14.0
 Config.FailCooldown = 2
 
@@ -19,12 +23,12 @@ Config.Items = {
 Config.DiscordWebhook = ''
 
 Config.Levels = {
-    [1] = { xp = 0, label = 'Pond Beginner' },
-    [2] = { xp = 160, label = 'Dock Hand' },
-    [3] = { xp = 420, label = 'River Angler' },
-    [4] = { xp = 900, label = 'Tide Chaser' },
-    [5] = { xp = 1600, label = 'Mariner' },
-    [6] = { xp = 2550, label = 'Deepwater Pro' }
+    [1] = { xp = 0, label = 'Nybörjare vid dammen' },
+    [2] = { xp = 160, label = 'Bryggfiskare' },
+    [3] = { xp = 420, label = 'Åfiskare' },
+    [4] = { xp = 900, label = 'Tidjägare' },
+    [5] = { xp = 1600, label = 'Sjöman' },
+    [6] = { xp = 2550, label = 'Djuphavsproffs' }
 }
 
 Config.Minigame = {
@@ -41,24 +45,24 @@ Config.Minigame = {
 
 
 Config.FishTiers = {
-    common = { label = 'Common', xpMultiplier = 1.0, payoutMultiplier = 1.0, color = '#9ca3af' },
-    uncommon = { label = 'Uncommon', xpMultiplier = 1.12, payoutMultiplier = 1.18, color = '#60a5fa' },
-    rare = { label = 'Rare', xpMultiplier = 1.25, payoutMultiplier = 1.42, color = '#a78bfa' },
-    epic = { label = 'Epic', xpMultiplier = 1.45, payoutMultiplier = 1.75, color = '#f472b6' },
-    legendary = { label = 'Legendary', xpMultiplier = 1.8, payoutMultiplier = 2.35, color = '#f59e0b' }
+    common = { label = 'Vanlig', xpMultiplier = 1.0, payoutMultiplier = 1.0, color = '#9ca3af' },
+    uncommon = { label = 'Ovanlig', xpMultiplier = 1.12, payoutMultiplier = 1.18, color = '#60a5fa' },
+    rare = { label = 'Sällsynt', xpMultiplier = 1.25, payoutMultiplier = 1.42, color = '#a78bfa' },
+    epic = { label = 'Episk', xpMultiplier = 1.45, payoutMultiplier = 1.75, color = '#f472b6' },
+    legendary = { label = 'Legendarisk', xpMultiplier = 1.8, payoutMultiplier = 2.35, color = '#f59e0b' }
 }
 
 Config.SizeClasses = {
-    { id = 'tiny', label = 'Tiny', minPercent = 0.0, payoutMultiplier = 0.75, xpMultiplier = 0.85 },
-    { id = 'small', label = 'Small', minPercent = 0.2, payoutMultiplier = 0.95, xpMultiplier = 0.95 },
-    { id = 'medium', label = 'Medium', minPercent = 0.45, payoutMultiplier = 1.0, xpMultiplier = 1.0 },
-    { id = 'large', label = 'Large', minPercent = 0.68, payoutMultiplier = 1.2, xpMultiplier = 1.15 },
-    { id = 'huge', label = 'Huge', minPercent = 0.86, payoutMultiplier = 1.45, xpMultiplier = 1.35 }
+    { id = 'tiny', label = 'Pytteliten', minPercent = 0.0, payoutMultiplier = 0.75, xpMultiplier = 0.85 },
+    { id = 'small', label = 'Liten', minPercent = 0.2, payoutMultiplier = 0.95, xpMultiplier = 0.95 },
+    { id = 'medium', label = 'Mellan', minPercent = 0.45, payoutMultiplier = 1.0, xpMultiplier = 1.0 },
+    { id = 'large', label = 'Stor', minPercent = 0.68, payoutMultiplier = 1.2, xpMultiplier = 1.15 },
+    { id = 'huge', label = 'Enorm', minPercent = 0.86, payoutMultiplier = 1.45, xpMultiplier = 1.35 }
 }
 
 Config.Shops = {
     {
-        label = 'Del Perro Bait & Tackle',
+        label = 'Del Perro Fiskehandel',
         coords = vec3(-1836.61, -1203.88, 13.02),
         items = {
             { item = Config.Items.Rod, price = 750, minLevel = 1 },
@@ -68,7 +72,7 @@ Config.Shops = {
 }
 
 Config.SellNPC = {
-    label = 'Fish Merchant',
+    label = 'Fiskhandlare',
     model = 'a_m_m_farmer_01',
     coords = vec4(-1815.84, -1193.36, 13.02, 332.0),
     scenario = 'WORLD_HUMAN_CLIPBOARD',
@@ -78,7 +82,7 @@ Config.SellNPC = {
         sprite = 356,
         color = 3,
         scale = 0.75,
-        label = 'Fish Buyer'
+        label = 'Fiskuppköpare'
     }
 }
 

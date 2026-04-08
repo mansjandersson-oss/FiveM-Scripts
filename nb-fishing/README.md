@@ -1,16 +1,16 @@
 # nb-fishing
 
-A fully customizable QBCore fishing resource featuring:
+Ett fullt konfigurerbart fiskescript för QBCore med:
 
-- **Stardew Valley-inspired fishing minigame** (vertical fish movement + player-controlled catch bar)
-- **Persistent progression** with levels and XP
-- **Skill tree** with unlockable bonuses
-- **Server leaderboard** (`/fishlb`) ranking by XP
-- **Tournament system** with periodic events and rewards
-- **Fish tiers + sizes + weights** metadata with dynamic sell values
-- **Config-first design** for zones, species, rewards, and difficulty
+- **Stardew Valley-inspirerat fiskeminispel** (vertikal fiskrörelse + spelarkontrollerad fångstbar)
+- **Persistent progression** med nivåer och XP
+- **Skillträd** med uppgraderingsbara bonusar
+- **Server-topplista** (`/fishlb`) sorterad på XP
+- **Turneringssystem** med återkommande event och belöningar
+- **Fisk-tiers + storlek + vikt-metadata** med dynamisk försäljning
+- **Config-first upplägg** för zoner, arter, belöningar och svårighetsgrad
 
-## Requirements
+## Krav
 
 - `qb-core`
 - `ox_lib`
@@ -20,15 +20,15 @@ A fully customizable QBCore fishing resource featuring:
 
 ## Installation
 
-1. Copy folder to your resources directory.
-2. Import `fishing_progress.sql`.
-3. Add to `server.cfg`:
+1. Kopiera mappen till din resources-katalog.
+2. Importera `fishing_progress.sql`.
+3. Lägg till i `server.cfg`:
 
 ```cfg
 ensure nb-fishing
 ```
 
-4. Add fish + tool items to your inventory item list (example ids used in this script):
+4. Lägg till fisk- och verktygsitems i ditt inventory (exempel-id:n som används i scriptet):
 
 - `fishing_rod`
 - `fishing_bait`
@@ -43,28 +43,28 @@ ensure nb-fishing
 - `sturgeon`
 - `mythic_carp`
 
-## Commands
+## Kommandon
 
-- Use `fishing_rod` item — cast line in nearby configured zone
-- `/fishskills` — open skill tree UI
-- Sell fish by targeting the Fish Merchant NPC
-- `/fishlb` — open fishing leaderboard
-- `/fishadmin_start_tourney` — force start tournament (admin)
+- Använd item `fishing_rod` — starta fiske i närmaste zon
+- `/fishskills` — öppna skillträd
+- Sälj fisk via target på Fiskhandlare-NPC
+- `/fishlb` — öppna fiske-topplista
+- `/fishadmin_start_tourney` — starta turnering manuellt (admin)
 
-## Customization
+## Anpassning
 
-Everything is configured in `config.lua` and `skilltree.lua`:
+Allt styrs i `config.lua` och `skilltree.lua`:
 
-- Add/remove zones and fish species.
-- Tune rarity, tiers, prices, XP, min/max weights, and minigame difficulty per fish.
-- Adjust minigame physics values globally.
-- Configure skill perks and max levels.
-- Configure tournament frequency, duration, and payout.
+- Lägg till/ta bort zoner och fiskarter
+- Justera rarity, tier, pris, XP, min/max-vikt och svårighetsgrad per fisk
+- Justera fysikvärden för minispel globalt
+- Anpassa skills, maxnivåer och effekter
+- Konfigurera turneringars intervall, längd och belöningar
 
-## Notes
+## Noteringar
 
-- Fishing starts by using the fishing rod item (server-side useable item).
-- Fish are sold through a target-enabled merchant NPC configured in `Config.SellNPC`.
-- Fish are stored with metadata (`tier`, `size`, `weight`, `quality`, `zone`, timestamp) and sold dynamically with tier/size multipliers.
-- Rod durability is reduced per attempt and affected by skill bonuses.
-- Rare species probabilities are affected by skill tree bonuses.
+- Fiske startar genom att använda fiskespö-item.
+- Fisk säljs via target-NPC (`Config.SellNPC`).
+- Fisk lagras med metadata (`tier`, `size`, `weight`, `quality`, `zone`, tidstämpel) och säljs med tier-/storleksmultiplikatorer.
+- Spö-hållbarhet börjar på 100 användningar (2 tapp vid fångst, 7 tapp vid flykt, reduceras av skillen Spövård).
+- Chans för sällsynta arter påverkas av skillträdet.
