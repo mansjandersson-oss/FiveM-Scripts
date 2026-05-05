@@ -1,0 +1,554 @@
+local QBCore = exports['qb-core']:GetCoreObject()
+
+-- ─── Serverstatus ───────────────────────────────────────────────────────────
+-- contracts[src]    = { vehicles = [{model, label}], completed = {model = true} }
+-- civilianJobs[src] = { active = bool, vehicleNetId = int }
+local contracts    = {}
+local civilianJobs = {}
+
+-- Separata cooldown-buckets (sekundstidsstämplar)
+local contractCooldowns = {}
+local civilCooldowns    = {}
+
+-- ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
+
+local function t(key, ...)
+    local lang = Locales[Config.Locale] or Locales.en
+    local text = (lang and lang[key]) or (Locales.en and Locales.en[key]) or key
+    if select('#', ...) > 0 then return text:format(...) end
+    return text
+end
+
+local function notify(src, message, notifyType)
+    TriggerClientEvent('chopshop:client:Notify', src, message, notifyType)
+end
+
+local function getPoliceCount()
+    local count = 0
+    for _, p in pairs(QBCore.Functions.GetQBPlayers()) do
+        if p.PlayerData.job
+           and p.PlayerData.job.name == 'police'
+           and p.PlayerData.job.onduty then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-- Returnerar (true, sekunderKvar) om spelaren har cooldown, annars sätts den
+-- och funktionen returnerar (false, 0).
+local function hasCooldown(bucket, src, seconds)
+    local now    = os.time()
+    local expiry = bucket[src] or 0
+    if expiry > now then return true, expiry - now end
+    bucket[src] = now + seconds
+    return false, 0
+end
+
+-- ─── Inventory-adapter (ox_inventory eller qb-inventory) ─────────────────────
+local addItem, removeItem, countItem, canCarry, getContractItemMetadata
+
+if Config.Inventory == 'qb-inventory' then
+    addItem = function(src, item, count, metadata)
+        return exports['qb-inventory']:AddItem(src, item, count, nil, metadata)
+    end
+    removeItem = function(src, item, count)
+        return exports['qb-inventory']:RemoveItem(src, item, count)
+    end
+    countItem = function(src, item)
+        local found = exports['qb-inventory']:GetItemByName(src, item)
+        return found and found.amount or 0
+    end
+    canCarry = function(src, item, count)
+        local Player = QBCore.Functions.GetPlayer(src)
+        if not Player then return false end
+        local itemData = QBCore.Shared.Items[item]
+        if not itemData then return true end
+        local addWeight     = (itemData.weight or 0) * count
+        local currentWeight = Player.PlayerData.metadata['currentweight'] or 0
+        local maxWeight     = Player.PlayerData.metadata['maxweight'] or 120000
+        return (currentWeight + addWeight) <= maxWeight
+    end
+    getContractItemMetadata = function(src)
+        local item = exports['qb-inventory']:GetItemByName(src, Config.Items.chop_contract)
+        if item and item.info and item.info.vehicles then
+            return item.info, item.slot
+        end
+        return nil
+    end
+else -- ox_inventory (standard)
+    addItem = function(src, item, count, metadata)
+        return exports.ox_inventory:AddItem(src, item, count, metadata)
+    end
+    removeItem = function(src, item, count)
+        return exports.ox_inventory:RemoveItem(src, item, count)
+    end
+    countItem = function(src, item)
+        return exports.ox_inventory:Search(src, 'count', item) or 0
+    end
+    canCarry = function(src, item, count, metadata)
+        return exports.ox_inventory:CanCarryItem(src, item, count, metadata)
+    end
+    getContractItemMetadata = function(src)
+        local slots = exports.ox_inventory:Search(src, 'slots', Config.Items.chop_contract)
+        if slots and slots[1] then
+            local found = exports.ox_inventory:GetSlot(src, slots[1])
+            if found and found.metadata and found.metadata.vehicles then
+                return found.metadata, slots[1]
+            end
+        end
+        return nil
+    end
+end
+
+-- Bygg en läsbar fordonslista för kontrakt-itemets beskrivning.
+-- Klara fordon tas bort från listan så bara återstående mål visas.
+local function buildContractDescription(vehicles, completed)
+    local lines, idx = {}, 1
+
+    for _, v in ipairs(vehicles) do
+        if not completed[v.model] then
+            lines[#lines + 1] = ('○ %d. %s'):format(idx, v.label)
+            idx = idx + 1
+        end
+    end
+
+    if #lines == 0 then
+        return t('contract_item_complete')
+    end
+
+    return table.concat(lines, '\n')
+end
+
+-- Uppdatera chop_contract-itemets metadata med senaste kontraktsstatus.
+-- Håller metadata synkad så återställning efter krasch ger rätt progress.
+local function updateContractItemMetadata(src, metadata)
+    local _, slot = getContractItemMetadata(src)
+    if slot then
+        metadata.description = buildContractDescription(metadata.vehicles, metadata.completed)
+        if Config.Inventory == 'qb-inventory' then
+            exports['qb-inventory']:SetMetadata(src, slot, metadata)
+        else
+            exports.ox_inventory:SetMetadata(src, slot, metadata)
+        end
+    elseif Config.Debug then
+        print(('[chopshop] updateContractItemMetadata: %s not found for source %s'):format(Config.Items.chop_contract, src))
+    end
+end
+
+-- Slå varje material separat utifrån dess egen drop-chans.
+-- Hoppar tyst över material spelaren inte kan bära.
+local function giveRandomMaterials(src)
+    for _, m in ipairs(Config.MaterialRewards) do
+        if math.random(100) <= m.chance then
+            local count = math.random(m.count.min, m.count.max)
+            if canCarry(src, m.item, count) then
+                addItem(src, m.item, count)
+            end
+        end
+    end
+end
+
+-- Bygg ett slumpat kontrakt (inga dubblettmodeller)
+local function buildContract()
+    local pool = {}
+    for _, v in ipairs(Config.ContractVehicles) do
+        pool[#pool + 1] = v
+    end
+    -- Fisher-Yates-blandning
+    for i = #pool, 2, -1 do
+        local j = math.random(i)
+        pool[i], pool[j] = pool[j], pool[i]
+    end
+    local vehicles = {}
+    for i = 1, Config.Criminal.vehicleCount do
+        vehicles[i] = pool[i]
+    end
+    return vehicles
+end
+
+-- Validera att partName/partItem-kombinationen är giltig (serverside)
+local function isValidPart(partName, partItem)
+    for _, part in ipairs(Config.StripParts) do
+        if part.name == partName and part.item == partItem then
+            return true
+        end
+    end
+    return false
+end
+
+-- ─── Kriminellt kontrakt ─────────────────────────────────────────────────────
+
+RegisterNetEvent('chopshop:server:GetContract', function()
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    if getPoliceCount() < Config.Criminal.policeRequired then
+        notify(src, t('not_enough_police', Config.Criminal.policeRequired), 'error')
+        return
+    end
+
+    -- Avvisa om ett ofärdigt kontrakt redan finns (serverstate eller item i inventory)
+    local existing = contracts[src]
+    if existing and existing.vehicles then
+        for _, v in ipairs(existing.vehicles) do
+            if not existing.completed[v.model] then
+                notify(src, t('contract_already_active'), 'error')
+                return
+            end
+        end
+    elseif countItem(src, Config.Items.chop_contract) > 0 then
+        -- Spelaren kraschade mitt i kontraktet; item finns kvar i inventory — be dem använda det
+        notify(src, t('contract_use_item_to_restore'), 'error')
+        return
+    end
+
+    local blocked, remaining = hasCooldown(contractCooldowns, src, Config.Criminal.cooldown)
+    if blocked then
+        notify(src, t('contract_cooldown', remaining), 'error')
+        return
+    end
+
+    local vehicles = buildContract()
+    contracts[src] = { vehicles = vehicles, completed = {} }
+
+    -- Ge spelaren ett fysiskt kontraktsitem som kan återställa progress efter krasch
+    addItem(src, Config.Items.chop_contract, 1, {
+        vehicles    = vehicles,
+        completed   = {},
+        description = buildContractDescription(vehicles, {})
+    })
+
+    TriggerClientEvent('chopshop:client:SpawnContractVehicles', src, { vehicles = vehicles })
+    TriggerClientEvent('chopshop:client:ShowContract', src, {
+        vehicles  = vehicles,
+        completed = {}
+    })
+    notify(src, t('contract_received', Config.Criminal.vehicleCount), 'success')
+end)
+
+RegisterNetEvent('chopshop:server:ViewContract', function()
+    local src      = source
+    local contract = contracts[src]
+    if not contract or not contract.vehicles then
+        notify(src, t('no_active_contract'), 'error')
+        return
+    end
+    TriggerClientEvent('chopshop:client:ShowContract', src, {
+        vehicles  = contract.vehicles,
+        completed = contract.completed
+    })
+end)
+
+RegisterNetEvent('chopshop:server:TurnInContract', function()
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    local contract = contracts[src]
+    if not contract or not contract.vehicles then
+        notify(src, t('no_active_contract'), 'error')
+        return
+    end
+
+    for _, v in ipairs(contract.vehicles) do
+        if not contract.completed[v.model] then
+            notify(src, t('contract_incomplete'), 'error')
+            return
+        end
+    end
+
+    local reward = math.random(Config.Criminal.minReward, Config.Criminal.maxReward)
+    addItem(src, Config.Items.money, reward)
+    giveRandomMaterials(src)
+    removeItem(src, Config.Items.chop_contract, 1)
+    contracts[src] = nil
+
+    notify(src, t('contract_turned_in', reward), 'success')
+end)
+
+-- Anropas när spelaren kommer till chop-zonen med ett fordon.
+-- Notifierar klienten om modellen matchar ett väntande kontraktsmål.
+RegisterNetEvent('chopshop:server:CheckContractVehicle', function(modelName)
+    local src      = source
+    local contract = contracts[src]
+    if not contract or not contract.vehicles then return end
+
+    if type(modelName) ~= 'string' then return end
+
+    for _, v in ipairs(contract.vehicles) do
+        if v.model:lower() == modelName:lower() and not contract.completed[v.model] then
+            TriggerClientEvent('chopshop:client:ContractVehicleDetected', src, v.label)
+            return
+        end
+    end
+end)
+
+-- ─── Civilt jobb ─────────────────────────────────────────────────────────────
+
+RegisterNetEvent('chopshop:server:RequestCivilianVehicle', function()
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    local job = civilianJobs[src]
+    if job and job.active then
+        notify(src, t('civil_job_already_active'), 'error')
+        return
+    end
+
+    local blocked, remaining = hasCooldown(civilCooldowns, src, Config.Civilian.cooldown)
+    if blocked then
+        notify(src, t('civil_job_cooldown', remaining), 'error')
+        return
+    end
+
+    local vehicleData = Config.CivilianVehicles[math.random(#Config.CivilianVehicles)]
+    civilianJobs[src] = { active = true, vehicleNetId = nil, vehicleModel = vehicleData.model }
+
+    TriggerClientEvent('chopshop:client:SpawnCivilianVehicle', src, vehicleData)
+    notify(src, t('civil_vehicle_incoming', vehicleData.label), 'inform')
+end)
+
+-- Klienten rapporterar tillbaka nätverks-ID efter fordonsspawn
+RegisterNetEvent('chopshop:server:RegisterCivilianVehicle', function(netId)
+    local src = source
+    local job = civilianJobs[src]
+    if job then job.vehicleNetId = netId end
+end)
+
+RegisterNetEvent('chopshop:server:TurnInAutoParts', function()
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    local sellableParts = Config.Civilian.sellableParts or {
+        Config.FrameStrip.scrapItem,
+        'aluminum',
+        'rubber',
+        'glass',
+        'plastic',
+        'steel'
+    }
+
+    local totalMaterials = 0
+    local removalQueue = {}
+
+    for _, itemName in ipairs(sellableParts) do
+        local count = countItem(src, itemName)
+        if count and count > 0 then
+            totalMaterials = totalMaterials + count
+            removalQueue[#removalQueue + 1] = { name = itemName, count = count }
+        end
+    end
+
+    if totalMaterials < 1 then
+        notify(src, t('no_auto_parts'), 'error')
+        return
+    end
+
+    for _, part in ipairs(removalQueue) do
+        local removed = removeItem(src, part.name, part.count)
+        if not removed then
+            notify(src, t('remove_parts_failed'), 'error')
+            return
+        end
+    end
+
+    local reward = totalMaterials * math.random(
+        Config.Civilian.rewardPerPart.min,
+        Config.Civilian.rewardPerPart.max
+    )
+    addItem(src, Config.Items.money, reward)
+    giveRandomMaterials(src)
+    civilianJobs[src] = nil
+
+    notify(src, t('civil_parts_turned_in', totalMaterials, reward), 'success')
+end)
+
+-- ─── Demonteringshändelser ───────────────────────────────────────────────────
+
+
+local function isVehicleValidForStrip(src, netId)
+    if type(netId) ~= 'number' then return false end
+
+    local job = civilianJobs[src]
+    if job and job.active then
+        return job.vehicleNetId ~= nil and job.vehicleNetId == netId
+    end
+
+    local contract = contracts[src]
+    if not contract or not contract.vehicles then return false end
+
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    if not (entity and entity > 0 and DoesEntityExist(entity)) then return false end
+
+    local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(entity) or 0)
+    if type(modelName) ~= 'string' then return false end
+    modelName = modelName:lower()
+
+    for _, v in ipairs(contract.vehicles) do
+        if v.model:lower() == modelName and not contract.completed[v.model] then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function giveCivilianMaterials(src, amount)
+    local pool = Config.Civilian.sellableParts or {}
+    if #pool < 1 then return 0 end
+
+    local given = 0
+    for _ = 1, amount do
+        local itemName = pool[math.random(#pool)]
+        if canCarry(src, itemName, 1) then
+            addItem(src, itemName, 1)
+            given = given + 1
+        end
+    end
+
+    return given
+end
+
+RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem)
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    if not isVehicleValidForStrip(src, netId) then
+        notify(src, t('invalid_target_vehicle'), 'error')
+        return
+    end
+
+    -- Serverside-validering: acceptera endast kända part name + item-kombinationer
+    if not isValidPart(partName, partItem) then
+        notify(src, t('invalid_part'), 'error')
+        return
+    end
+
+    -- Ingen reward per del: reward ges endast vid frame-strip.
+    notify(src, t('part_stripped', t('part_' .. partName)), 'success')
+end)
+
+RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
+    local src    = source
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    if not isVehicleValidForStrip(src, netId) then
+        notify(src, t('invalid_target_vehicle'), 'error')
+        return
+    end
+
+    if type(modelName) ~= 'string' then modelName = '' end
+
+    local job     = civilianJobs[src]
+    local isCivil = job and job.active
+
+    local scrapCount = math.random(Config.FrameStrip.scrapCount.min, Config.FrameStrip.scrapCount.max)
+
+    if isCivil then
+        if giveCivilianMaterials(src, scrapCount) < 1 then
+            notify(src, t('no_inventory_space'), 'error')
+        end
+
+        -- Ge rambonus som pengar-item + slumpmässiga material
+        local bonus = math.random(Config.Civilian.frameBonus.min, Config.Civilian.frameBonus.max)
+        addItem(src, Config.Items.money, bonus)
+        giveRandomMaterials(src)
+        job.active = false
+        notify(src, t('civil_frame_stripped', bonus), 'success')
+    else
+        if canCarry(src, Config.FrameStrip.scrapItem, scrapCount) then
+            addItem(src, Config.FrameStrip.scrapItem, scrapCount)
+        else
+            notify(src, t('no_inventory_space'), 'error')
+        end
+
+        -- Uppdatera kriminellt kontrakt om tillämpligt
+        local contract = contracts[src]
+        if contract and contract.vehicles then
+            for _, v in ipairs(contract.vehicles) do
+                if v.model:lower() == modelName:lower() and not contract.completed[v.model] then
+                    contract.completed[v.model] = true
+                    -- Håll kontrakt-itemets metadata synkad för återställning efter krasch
+                    updateContractItemMetadata(src, { vehicles = contract.vehicles, completed = contract.completed })
+
+                    local remaining = 0
+                    for _, cv in ipairs(contract.vehicles) do
+                        if not contract.completed[cv.model] then
+                            remaining = remaining + 1
+                        end
+                    end
+
+                    if remaining == 0 then
+                        notify(src, t('contract_all_done'), 'success')
+                    else
+                        notify(src, t('contract_vehicle_done', v.label, remaining), 'success')
+                    end
+                    return
+                end
+            end
+        end
+        notify(src, t('frame_stripped'), 'success')
+    end
+end)
+
+-- ─── Kontraktsitem: återställning efter krasch ───────────────────────────────
+-- När spelaren använder chop_contract-itemet, återställ aktivt kontrakt från
+-- itemets metadata (hanterar fall där serverstate förlorats vid krasch).
+
+local function handleContractItemUse(src)
+    local player = QBCore.Functions.GetPlayer(src)
+    if not player then return end
+
+    local contract = contracts[src]
+
+    if contract and contract.vehicles then
+        -- Kontraktet är fortfarande aktivt i serverstate — visa det bara
+        TriggerClientEvent('chopshop:client:ShowContract', src, {
+            vehicles  = contract.vehicles,
+            completed = contract.completed
+        })
+        notify(src, t('contract_restored'), 'success')
+        return
+    end
+
+    -- Serverstate förlorad (t.ex. efter krasch) – återställ från item-metadata
+    local meta = getContractItemMetadata(src)
+    if meta then
+        contracts[src] = {
+            vehicles  = meta.vehicles,
+            completed = meta.completed or {}
+        }
+        contract = contracts[src]
+    end
+
+    if not contract or not contract.vehicles then
+        notify(src, t('no_active_contract'), 'error')
+        return
+    end
+
+    TriggerClientEvent('chopshop:client:SpawnContractVehicles', src, { vehicles = contract.vehicles })
+    TriggerClientEvent('chopshop:client:ShowContract', src, {
+        vehicles  = contract.vehicles,
+        completed = contract.completed
+    })
+    notify(src, t('contract_restored'), 'success')
+end
+
+-- Registrera usable item via QBCore för kompatibilitet (även när ox_inventory saknar RegisterUsableItem-export).
+QBCore.Functions.CreateUseableItem(Config.Items.chop_contract, handleContractItemUse)
+
+-- ─── Städning vid frånkoppling ───────────────────────────────────────────────
+
+AddEventHandler('playerDropped', function()
+    local src = source
+    contracts[src]           = nil
+    civilianJobs[src]        = nil
+    contractCooldowns[src]   = nil
+    civilCooldowns[src]      = nil
+end)
