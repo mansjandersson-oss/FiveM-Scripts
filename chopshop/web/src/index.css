@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 16% 10%;
+  --foreground: 40 28% 92%;
+  --card: 220 14% 12%;
+  --card-foreground: 40 28% 92%;
+  --primary: 10 72% 54%;
+  --primary-foreground: 35 35% 96%;
+  --secondary: 206 18% 19%;
+  --secondary-foreground: 40 22% 90%;
+  --muted: 210 12% 34%;
+  --muted-foreground: 42 14% 68%;
+  --destructive: 0 72% 48%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 206 18% 24%;
+  --input: 206 18% 24%;
+  --ring: 10 72% 54%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+button {
+  font: inherit;
+}
