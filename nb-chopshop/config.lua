@@ -3,6 +3,16 @@ Config = {}
 Config.Debug = false
 Config.Locale = 'sv'
 
+-- Debugläge för lokal felsökning.
+-- Sätt Config.Debug = true och slå på det du vill testa utan externa exports.
+Config.DebugOptions = {
+    verbose = true,              -- skriver extra [chopshop:debug]-rader i console/F8
+    bypassRoleCheck = true,      -- gör att NPC:ns kriminella val visas även om RoleCheckExport saknas
+    forcedRoute = 'criminal',    -- 'criminal', 'civilian' eller 'both' när bypassRoleCheck är aktivt
+    ignoreCooldown = true,       -- hoppar över kontrakts/civil cooldown i debugläge
+    ignorePolice = true,         -- hoppar över Config.Criminal.policeRequired i debugläge
+}
+
 -- Inventariesystem att använda: 'ox_inventory' eller 'qb-inventory'
 Config.Inventory = 'ox_inventory'
 

@@ -24,6 +24,16 @@ local function notify(message, notifyType)
     lib.notify({ title = t('script_title'), description = message, type = notifyType or 'inform' })
 end
 
+local function debugPrint(message, ...)
+    if not Config.Debug or not (Config.DebugOptions and Config.DebugOptions.verbose) then return end
+
+    if select('#', ...) > 0 then
+        message = message:format(...)
+    end
+
+    print(('[chopshop:debug:client] %s'):format(message))
+end
+
 local function runAction(label, duration, anim)
     if actionBusy then
         notify(t('busy_action'), 'error')
@@ -480,23 +490,41 @@ local function normalizeRouteResult(result)
 end
 
 local function getPlayerRoute()
+    local debugOptions = Config.DebugOptions or {}
+    if Config.Debug and debugOptions.bypassRoleCheck then
+        local forcedRoute = debugOptions.forcedRoute or 'criminal'
+        debugPrint('role check bypassed, forced route=%s', forcedRoute)
+        return forcedRoute
+    end
+
     local roleCfg = Config.RoleCheckExport
     if not roleCfg or not roleCfg.resource or not roleCfg.func then
+        debugPrint('RoleCheckExport saknas, fallback route=civilian')
         return 'civilian'
     end
 
     local exportRes = exports[roleCfg.resource]
     if not exportRes or not exportRes[roleCfg.func] then
+        debugPrint('RoleCheckExport hittades inte: %s.%s, fallback route=civilian', tostring(roleCfg.resource), tostring(roleCfg.func))
         return 'civilian'
     end
 
     local ok, result = pcall(function()
+        if roleCfg.passServerId then
+            return exportRes[roleCfg.func](GetPlayerServerId(PlayerId()))
+        end
         return exportRes[roleCfg.func]()
     end)
 
     if ok then
         local route = normalizeRouteResult(result)
-        if route then return route end
+        if route then
+            debugPrint('RoleCheckExport result=%s route=%s', tostring(result), route)
+            return route
+        end
+        debugPrint('RoleCheckExport gav ett okänt svar: %s', tostring(result))
+    else
+        debugPrint('RoleCheckExport error: %s', tostring(result))
     end
 
     return 'civilian'

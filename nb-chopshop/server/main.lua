@@ -23,6 +23,20 @@ local function notify(src, message, notifyType)
     TriggerClientEvent('chopshop:client:Notify', src, message, notifyType)
 end
 
+local function debugPrint(message, ...)
+    if not Config.Debug or not (Config.DebugOptions and Config.DebugOptions.verbose) then return end
+
+    if select('#', ...) > 0 then
+        message = message:format(...)
+    end
+
+    print(('[chopshop:debug:server] %s'):format(message))
+end
+
+local function debugOptionEnabled(name)
+    return Config.Debug and Config.DebugOptions and Config.DebugOptions[name] == true
+end
+
 local function getPoliceCount()
     local count = 0
     for _, p in pairs(QBCore.Functions.GetQBPlayers()) do
@@ -184,9 +198,13 @@ RegisterNetEvent('chopshop:server:GetContract', function()
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
-    if getPoliceCount() < Config.Criminal.policeRequired then
+    debugPrint('GetContract source=%s', src)
+
+    if not debugOptionEnabled('ignorePolice') and getPoliceCount() < Config.Criminal.policeRequired then
         notify(src, t('not_enough_police', Config.Criminal.policeRequired), 'error')
         return
+    elseif debugOptionEnabled('ignorePolice') then
+        debugPrint('police requirement ignored for source=%s', src)
     end
 
     -- Avvisa om ett ofärdigt kontrakt redan finns (serverstate eller item i inventory)
@@ -204,10 +222,14 @@ RegisterNetEvent('chopshop:server:GetContract', function()
         return
     end
 
-    local blocked, remaining = hasCooldown(contractCooldowns, src, Config.Criminal.cooldown)
-    if blocked then
-        notify(src, t('contract_cooldown', remaining), 'error')
-        return
+    if not debugOptionEnabled('ignoreCooldown') then
+        local blocked, remaining = hasCooldown(contractCooldowns, src, Config.Criminal.cooldown)
+        if blocked then
+            notify(src, t('contract_cooldown', remaining), 'error')
+            return
+        end
+    else
+        debugPrint('contract cooldown ignored for source=%s', src)
     end
 
     local vehicles = buildContract()
@@ -231,6 +253,7 @@ end)
 RegisterNetEvent('chopshop:server:ViewContract', function()
     local src      = source
     local contract = contracts[src]
+    debugPrint('ViewContract source=%s hasContract=%s', src, tostring(contract ~= nil))
     if not contract or not contract.vehicles then
         notify(src, t('no_active_contract'), 'error')
         return
@@ -245,6 +268,8 @@ RegisterNetEvent('chopshop:server:TurnInContract', function()
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
+
+    debugPrint('TurnInContract source=%s', src)
 
     local contract = contracts[src]
     if not contract or not contract.vehicles then
@@ -277,6 +302,8 @@ RegisterNetEvent('chopshop:server:CheckContractVehicle', function(modelName)
 
     if type(modelName) ~= 'string' then return end
 
+    debugPrint('CheckContractVehicle source=%s model=%s', src, modelName)
+
     for _, v in ipairs(contract.vehicles) do
         if v.model:lower() == modelName:lower() and not contract.completed[v.model] then
             TriggerClientEvent('chopshop:client:ContractVehicleDetected', src, v.label)
@@ -292,16 +319,22 @@ RegisterNetEvent('chopshop:server:RequestCivilianVehicle', function()
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
+    debugPrint('RequestCivilianVehicle source=%s', src)
+
     local job = civilianJobs[src]
     if job and job.active then
         notify(src, t('civil_job_already_active'), 'error')
         return
     end
 
-    local blocked, remaining = hasCooldown(civilCooldowns, src, Config.Civilian.cooldown)
-    if blocked then
-        notify(src, t('civil_job_cooldown', remaining), 'error')
-        return
+    if not debugOptionEnabled('ignoreCooldown') then
+        local blocked, remaining = hasCooldown(civilCooldowns, src, Config.Civilian.cooldown)
+        if blocked then
+            notify(src, t('civil_job_cooldown', remaining), 'error')
+            return
+        end
+    else
+        debugPrint('civil cooldown ignored for source=%s', src)
     end
 
     local vehicleData = Config.CivilianVehicles[math.random(#Config.CivilianVehicles)]
@@ -418,6 +451,8 @@ RegisterNetEvent('chopshop:server:StripPart', function(netId, partName, partItem
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
 
+    debugPrint('StripPart source=%s netId=%s part=%s item=%s', src, tostring(netId), tostring(partName), tostring(partItem))
+
     if not isVehicleValidForStrip(src, netId) then
         notify(src, t('invalid_target_vehicle'), 'error')
         return
@@ -437,6 +472,8 @@ RegisterNetEvent('chopshop:server:StripFrame', function(netId, modelName)
     local src    = source
     local player = QBCore.Functions.GetPlayer(src)
     if not player then return end
+
+    debugPrint('StripFrame source=%s netId=%s model=%s', src, tostring(netId), tostring(modelName))
 
     if not isVehicleValidForStrip(src, netId) then
         notify(src, t('invalid_target_vehicle'), 'error')
