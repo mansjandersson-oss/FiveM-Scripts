@@ -29,6 +29,84 @@ local function notify(message, notifyType)
     })
 end
 
+local function requestIllegalProductionAlert(action, actionData)
+    if not Config.PoliceAlert or Config.PoliceAlert.Enabled == false then
+        return
+    end
+
+    TriggerServerEvent(eventName('server', 'CheckIllegalProductionAlert'), action, actionData or {})
+end
+
+local function npcCanSeePlayer(ped, playerPed, playerCoords)
+    if ped == playerPed or not DoesEntityExist(ped) or IsPedAPlayer(ped) then
+        return false
+    end
+
+    if IsPedDeadOrDying(ped, true) or not IsPedHuman(ped) then
+        return false
+    end
+
+    local witnessConfig = Config.PoliceAlert.Witness or {}
+    local radius = witnessConfig.Radius or 25.0
+    local pedCoords = GetEntityCoords(ped)
+    local offset = playerCoords - pedCoords
+    local distance = #(offset)
+
+    if distance < 0.5 or distance > radius then
+        return false
+    end
+
+    local forward = GetEntityForwardVector(ped)
+    local dot = ((forward.x * offset.x) + (forward.y * offset.y) + (forward.z * offset.z)) / distance
+    local fov = witnessConfig.Fov or 100.0
+
+    if dot < math.cos(math.rad(fov * 0.5)) then
+        return false
+    end
+
+    if witnessConfig.RequireLineOfSight ~= false and not HasEntityClearLosToEntity(ped, playerPed, 17) then
+        return false
+    end
+
+    return true
+end
+
+local function hasNpcWitness()
+    local playerPed = PlayerPedId()
+    local playerCoords = GetEntityCoords(playerPed)
+    local peds = GetGamePool('CPed')
+
+    for i = 1, #peds do
+        if npcCanSeePlayer(peds[i], playerPed, playerCoords) then
+            return true
+        end
+    end
+
+    return false
+end
+
+local function createPoliceAlertBlip(coords)
+    local blipConfig = Config.PoliceAlert and Config.PoliceAlert.Blip
+    if not blipConfig or blipConfig.Enabled == false then
+        return
+    end
+
+    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
+    SetBlipSprite(blip, blipConfig.Sprite or 161)
+    SetBlipScale(blip, blipConfig.Scale or 1.0)
+    SetBlipColour(blip, blipConfig.Color or 1)
+    SetBlipAsShortRange(blip, false)
+    BeginTextCommandSetBlipName('STRING')
+    AddTextComponentSubstringPlayerName(t('police_alert_illegal_distilling'))
+    EndTextCommandSetBlipName(blip)
+
+    SetTimeout((blipConfig.Duration or 60) * 1000, function()
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end)
+end
+
 local function closeNui()
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
@@ -53,7 +131,7 @@ local function openNuiDialog(kind, payload)
     end
 
     nuiBusy = true
-    nuiRequestId += 1
+    nuiRequestId = nuiRequestId + 1
 
     local requestId = nuiRequestId
     local request = promise.new()
@@ -299,6 +377,10 @@ local function startFermentation()
         return
     end
 
+    requestIllegalProductionAlert('ferment', {
+        route = fermentData.route
+    })
+
     local completed = runAction(t('fermenting_action'), Config.Progress.Ferment, {
         dict = 'amb@prop_human_bbq@male@base',
         clip = 'base',
@@ -322,6 +404,10 @@ local function startDistillation()
     if not distillData then
         return
     end
+
+    requestIllegalProductionAlert('distill', {
+        source = distillData.source
+    })
 
     local completed = runAction(t('distill_action'), Config.Progress.Distill, {
         dict = 'amb@world_human_hammering@male@base',
@@ -347,6 +433,8 @@ local function startBottling()
         return
     end
 
+    requestIllegalProductionAlert('bottle')
+
     local completed = runAction(t('bottling_action'), Config.Progress.Bottle, {
         dict = 'mp_prison_break',
         clip = 'hack_loop'
@@ -366,6 +454,8 @@ local function startPacking()
         TriggerServerEvent(eventName('server', 'BreakBottles'), broken)
         return
     end
+
+    requestIllegalProductionAlert('pack')
 
     local completed = runAction(t('pack_action'), Config.Progress.Pack, {
         dict = 'anim@heists@ornate_bank@grab_cash',
@@ -477,6 +567,25 @@ end)
 
 RegisterNetEvent(eventName('client', 'Notify'), function(message, notifyType)
     notify(message, notifyType)
+end)
+
+RegisterNetEvent(eventName('client', 'CheckNpcWitness'), function(action)
+    if hasNpcWitness() then
+        TriggerServerEvent(eventName('server', 'ConfirmIllegalProductionWitness'), action)
+    end
+end)
+
+RegisterNetEvent(eventName('client', 'PoliceAlert'), function(alertData)
+    if type(alertData) ~= 'table' then
+        return
+    end
+
+    local coords = alertData.coords
+    notify(alertData.message or t('police_alert_illegal_distilling'), 'warning')
+
+    if coords then
+        createPoliceAlertBlip(vec3(coords.x, coords.y, coords.z))
+    end
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)

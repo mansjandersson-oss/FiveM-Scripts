@@ -13,7 +13,7 @@ A full **QBCore farm-to-shelf distillery resource** designed for immersive rolep
 - Uses **ox_target** for all interaction zones.
 - Uses **ox_inventory** for item searching, removing, adding, metadata, and carry checks.
 - Uses **React/Vite/Tailwind/shadcn-style NUI** for fermentation, distillation, and bottling setup.
-- Built with cooldowns, server-side zone validation, and optional police requirement.
+- Built with cooldowns, server-side zone validation, optional police requirement, and NPC witness police alerts through `lb-tablet` for unlicensed production.
 
 ---
 
@@ -22,7 +22,7 @@ A full **QBCore farm-to-shelf distillery resource** designed for immersive rolep
 - `ox_lib`
 - `ox_inventory`
 - `ox_target`
-- `oxmysql`
+- `lb-tablet` (for dispatch alerts)
 
 ## Installation
 1. Copy `nb-destil` into your server resources.
@@ -52,6 +52,7 @@ Add these items where your server defines item data (QBCore items table or ox in
 - `cardboard`
 - `bottled_liquor`
 - `liquor_crate`
+- `destileringstillstand`
 
 ### Example `items.lua` snippet
 ```lua
@@ -66,6 +67,7 @@ Add these items where your server defines item data (QBCore items table or ox in
 ['cardboard'] = { name = 'cardboard', label = 'Cardboard', weight = 100, type = 'item', image = 'cardboard.png', unique = false, useable = false, shouldClose = true, description = 'Used to pack crates' },
 ['bottled_liquor'] = { name = 'bottled_liquor', label = 'Bottled Liquor', weight = 200, type = 'item', image = 'liquor.png', unique = false, useable = false, shouldClose = true, description = 'Finished liquor bottle' },
 ['liquor_crate'] = { name = 'liquor_crate', label = 'Liquor Crate', weight = 1200, type = 'item', image = 'crate.png', unique = false, useable = false, shouldClose = true, description = 'Packed crate ready for stocking' },
+['destileringstillstand'] = { name = 'destileringstillstand', label = 'Destileringstillstånd', weight = 10, type = 'item', image = 'license.png', unique = true, useable = false, shouldClose = true, description = 'Tillstånd för laglig destillering' },
 ```
 
 
@@ -99,6 +101,7 @@ Tune all behavior in `config.lua`:
 - Harvest/process/store locations
 - Payout range
 - Police requirement
+- Police alert behavior (`Config.PoliceAlert`), including `lb-tablet` dispatch settings, required permit item, police jobs, NPC witness radius/FOV, blip settings, and alert cooldown
 - Server-side distance validation (`Config.Security`)
 - Locale (`Config.Locale = 'en'`, `'sv'`, `'de'`, or `'es'`)
 
@@ -119,4 +122,5 @@ Tune all behavior in `config.lua`:
 - Temp/time must match the selected product profile to succeed.
 - If fermentation temperature is pushed too high, there is a configurable chance of a vat explosion that damages players within 5m.
 - Failing the packing mini-game can break bottled liquor from the player inventory.
+- If a player manufactures without `Config.PoliceAlert.PermitItem`, police only receive an `lb-tablet` dispatch with the text `Ser en person vid en hembränningsapparat` when a nearby NPC can see the player.
 - You can add additional stores and production locations in `Config.StockZones` and `Config.ProcessingStations`.

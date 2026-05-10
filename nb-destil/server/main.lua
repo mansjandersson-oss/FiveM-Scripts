@@ -4,6 +4,8 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local harvestCooldowns = {}
 local processCooldowns = {}
 local deliveryCooldowns = {}
+local alertCooldowns = {}
+local pendingWitnessChecks = {}
 local harvestZones = {}
 local stockZones = {}
 local processingStations = {}
@@ -57,7 +59,7 @@ local function getPoliceCount()
     for _, player in pairs(players) do
         local job = player.PlayerData.job
         if job and job.name == 'police' and job.onduty then
-            amount += 1
+            amount = amount + 1
         end
     end
 
@@ -113,6 +115,115 @@ local function validateProcessingDistance(src, action)
     return validateZoneDistance(src, station, Config.Security.MaxProcessDistance)
 end
 
+local function canSendPoliceAlert(src)
+    local alertConfig = Config.PoliceAlert
+    if not alertConfig or alertConfig.Enabled == false then
+        return false
+    end
+
+    local remaining = getCooldownRemaining(alertCooldowns, src)
+    return remaining <= 0
+end
+
+local function isAlertAction(action)
+    local alertConfig = Config.PoliceAlert
+    return alertConfig
+        and alertConfig.Enabled ~= false
+        and alertConfig.Actions
+        and alertConfig.Actions[action] == true
+end
+
+local function hasDistillingPermit(src)
+    local permitItem = Config.PoliceAlert and Config.PoliceAlert.PermitItem
+    if not permitItem or permitItem == '' then
+        return false
+    end
+
+    return (exports.ox_inventory:Search(src, 'count', permitItem) or 0) > 0
+end
+
+local function isPolice(player)
+    local job = player.PlayerData.job
+    local policeJobs = Config.PoliceAlert and Config.PoliceAlert.PoliceJobs
+    return job and job.onduty and policeJobs and policeJobs[job.name] == true
+end
+
+local function sendPoliceAlert(src)
+    local ped = GetPlayerPed(src)
+    if ped == 0 then
+        return
+    end
+
+    local coords = GetEntityCoords(ped)
+    local alertConfig = Config.PoliceAlert
+    local dispatchConfig = alertConfig and alertConfig.Dispatch or {}
+    local payload = {
+        message = t('police_alert_illegal_distilling'),
+        coords = {
+            x = coords.x,
+            y = coords.y,
+            z = coords.z
+        }
+    }
+
+    local dispatchResource = dispatchConfig.Resource or 'lb-tablet'
+    if GetResourceState(dispatchResource) == 'started' then
+        local success = pcall(function()
+            local dispatch = {
+                priority = dispatchConfig.Priority or 'medium',
+                code = dispatchConfig.Code or '10-66',
+                title = dispatchConfig.Title or t('police_alert_illegal_distilling'),
+                description = t('police_alert_illegal_distilling'),
+                location = {
+                    label = dispatchConfig.LocationLabel or t('police_alert_illegal_distilling'),
+                    coords = {
+                        x = coords.x,
+                        y = coords.y
+                    }
+                },
+                time = dispatchConfig.Time or 300,
+                job = 'police',
+                sound = dispatchConfig.Sound,
+                fields = {
+                    {
+                        icon = 'flask',
+                        label = 'Larm',
+                        value = t('police_alert_illegal_distilling')
+                    }
+                }
+            }
+
+            if not Config.PoliceAlert.Blip or Config.PoliceAlert.Blip.Enabled ~= false then
+                dispatch.blip = {
+                    sprite = (Config.PoliceAlert.Blip and Config.PoliceAlert.Blip.Sprite) or 161,
+                    color = (Config.PoliceAlert.Blip and Config.PoliceAlert.Blip.Color) or 1,
+                    size = (Config.PoliceAlert.Blip and Config.PoliceAlert.Blip.Scale) or 1.0,
+                    shortRange = false,
+                    label = dispatchConfig.Title or t('police_alert_illegal_distilling')
+                }
+            end
+
+            exports[dispatchResource]:AddDispatch(dispatch)
+        end)
+
+        if success then
+            return
+        end
+    end
+
+    if dispatchConfig.UseFallbackNotify == false then
+        return
+    end
+
+    local players = QBCore.Functions.GetQBPlayers()
+    for targetSrc, player in pairs(players) do
+        if isPolice(player) then
+            local policeSrc = player.PlayerData.source or targetSrc
+            TriggerClientEvent(eventName('client', 'PoliceAlert'), policeSrc, payload)
+        end
+    end
+end
+
 local function hasItems(src, required)
     for item, amount in pairs(required) do
         local count = exports.ox_inventory:Search(src, 'count', item) or 0
@@ -141,6 +252,40 @@ end
 
 local function addOutput(src, outputItem, count, metadata)
     return exports.ox_inventory:AddItem(src, outputItem, count, metadata)
+end
+
+local function canStartAlertedAction(src, action, actionData)
+    actionData = type(actionData) == 'table' and actionData or {}
+
+    if action == 'ferment' then
+        local route = tostring(actionData.route or '')
+        local fermentRoute = Config.FermentationRoutes[route]
+        if not fermentRoute then
+            return false
+        end
+
+        return hasItems(src, fermentRoute.input)
+    end
+
+    if action == 'distill' then
+        local sourceMash = tostring(actionData.source or '')
+        if not Config.DistillProfiles[sourceMash] then
+            return false
+        end
+
+        local mashItem = sourceMash == 'beer' and Config.Items.beerMash or Config.Items.wineMash
+        return (exports.ox_inventory:Search(src, 'count', mashItem) or 0) > 0
+    end
+
+    if action == 'bottle' then
+        return hasItems(src, Config.Recipes.Bottle.input)
+    end
+
+    if action == 'pack' then
+        return hasItems(src, Config.Recipes.Pack.input)
+    end
+
+    return false
 end
 
 local function getDistillProfile(sourceMash, product, temp, time)
@@ -471,6 +616,63 @@ RegisterNetEvent(eventName('server', 'BreakBottles'), function(amount)
     end
 end)
 
+RegisterNetEvent(eventName('server', 'CheckIllegalProductionAlert'), function(action, actionData)
+    local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+
+    if not player then return end
+    if type(action) ~= 'string' or not isAlertAction(action) then
+        return
+    end
+
+    if hasDistillingPermit(src) or not canSendPoliceAlert(src) then
+        return
+    end
+
+    if not validateProcessingDistance(src, action) then
+        return
+    end
+
+    if not canStartAlertedAction(src, action, actionData) then
+        return
+    end
+
+    pendingWitnessChecks[src] = {
+        action = action,
+        expiresAt = os.time() + 8
+    }
+
+    TriggerClientEvent(eventName('client', 'CheckNpcWitness'), src, action)
+end)
+
+RegisterNetEvent(eventName('server', 'ConfirmIllegalProductionWitness'), function(action)
+    local src = source
+    local player = QBCore.Functions.GetPlayer(src)
+
+    if not player then return end
+    if type(action) ~= 'string' or not isAlertAction(action) then
+        return
+    end
+
+    if hasDistillingPermit(src) or not canSendPoliceAlert(src) then
+        return
+    end
+
+    local pending = pendingWitnessChecks[src]
+    pendingWitnessChecks[src] = nil
+
+    if not pending or pending.action ~= action or pending.expiresAt < os.time() then
+        return
+    end
+
+    if not validateProcessingDistance(src, action) then
+        return
+    end
+
+    setCooldown(alertCooldowns, src, Config.PoliceAlert.Cooldown or 120)
+    sendPoliceAlert(src)
+end)
+
 RegisterNetEvent(eventName('server', 'StockStore'), function(zoneName)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
@@ -519,6 +721,8 @@ AddEventHandler('playerDropped', function()
     harvestCooldowns[src] = nil
     processCooldowns[src] = nil
     deliveryCooldowns[src] = nil
+    alertCooldowns[src] = nil
+    pendingWitnessChecks[src] = nil
 end)
 
 buildLookups()

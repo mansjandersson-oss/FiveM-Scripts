@@ -19,7 +19,6 @@ client_scripts {
 }
 
 server_scripts {
-    '@oxmysql/lib/MySQL.lua',
     'server/main.lua'
 }
 
@@ -34,5 +33,6 @@ dependencies {
     'qb-core',
     'ox_inventory',
     'ox_target',
-    'ox_lib'
+    'ox_lib',
+    'lb-tablet'
 }

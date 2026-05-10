@@ -1,6 +1,7 @@
 Locales = {
     en = {
         script_title = 'NB Destil',
+        police_alert_illegal_distilling = 'Ser en person vid en hembränningsapparat',
 
         route_wine_mash = 'Wine Mash (Grapes)',
         route_beer_mash = 'Beer Mash (Barley)',
@@ -112,6 +113,7 @@ Locales = {
 
     sv = {
         script_title = 'NB Destil',
+        police_alert_illegal_distilling = 'Ser en person vid en hembränningsapparat',
 
         route_wine_mash = 'Vinmäsk (Druvor)',
         route_beer_mash = 'Ölmäsk (Korn)',

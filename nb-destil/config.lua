@@ -11,6 +11,44 @@ Config.Security = {
 }
 
 Config.PoliceRequired = 0
+
+Config.PoliceAlert = {
+    Enabled = true,
+    PermitItem = 'destileringstillstand',
+    Dispatch = {
+        Resource = 'lb-tablet',
+        UseFallbackNotify = true,
+        Code = '10-66',
+        Priority = 'medium',
+        Title = 'Misstänkt hembränning',
+        LocationLabel = 'Hembränningsapparat',
+        Time = 300,
+        Sound = 'notification.mp3'
+    },
+    PoliceJobs = {
+        police = true
+    },
+    Actions = {
+        ferment = true,
+        distill = true,
+        bottle = true,
+        pack = true
+    },
+    Cooldown = 120,
+    Witness = {
+        Radius = 25.0,
+        Fov = 100.0,
+        RequireLineOfSight = true
+    },
+    Blip = {
+        Enabled = true,
+        Sprite = 161,
+        Color = 1,
+        Scale = 1.0,
+        Duration = 60
+    }
+}
+
 Config.MinDeliveryPayout = 420
 Config.MaxDeliveryPayout = 780
 
