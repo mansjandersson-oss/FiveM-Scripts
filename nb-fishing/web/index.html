@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="sv">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,17 +8,51 @@
 </head>
 <body>
   <div id="game" class="hidden">
-    <div class="panel">
-      <div class="title">Fiskeminispel</div>
-      <div class="meter-wrap">
-        <div id="fish"></div>
-        <div id="bar"></div>
+    <section class="panel" aria-label="Fiskeminispel">
+      <header class="panel-header">
+        <div>
+          <p id="zone" class="eyebrow">Fiskevatten</p>
+          <h1 id="fishName">Napp!</h1>
+        </div>
+        <div class="timer">
+          <span id="timer">0.0</span>
+          <small>sek</small>
+        </div>
+      </header>
+
+      <div class="play-area">
+        <div class="meter-wrap">
+          <div class="water-lines" aria-hidden="true"></div>
+          <div id="bar">
+            <span>Kontroll</span>
+          </div>
+          <div id="fish" aria-hidden="true">
+            <span class="fish-body"></span>
+            <span class="fish-tail"></span>
+          </div>
+        </div>
+
+        <aside class="stats">
+          <div>
+            <span>Kontroll</span>
+            <strong id="capturePercent">20%</strong>
+          </div>
+          <div>
+            <span>Bar</span>
+            <strong id="barBonus">0%</strong>
+          </div>
+          <div>
+            <span>Lugn</span>
+            <strong id="readerBonus">0%</strong>
+          </div>
+        </aside>
       </div>
+
       <div class="capture-wrap">
         <div id="capture"></div>
       </div>
-      <div class="hint">Håll SPACE för att höja baren • Släpp för att sänka</div>
-    </div>
+      <p id="status" class="status">Håll mellanslag eller musknapp för att höja baren.</p>
+    </section>
   </div>
   <script src="app.js"></script>
 </body>

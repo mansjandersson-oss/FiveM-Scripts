@@ -95,11 +95,11 @@ Config.Zones = {
         minLevel = 1,
         xpMultiplier = 1.0,
         species = {
-            { item = 'anchovy', tier = 'common', minWeight = 0.3, maxWeight = 1.0, rarity = 42, xp = 30, price = 45, difficulty = 0.9 },
-            { item = 'mackerel', tier = 'uncommon', minWeight = 0.8, maxWeight = 2.1, rarity = 25, xp = 46, price = 85, difficulty = 1.1 },
-            { item = 'sea_bass', tier = 'uncommon', minWeight = 1.2, maxWeight = 3.4, rarity = 16, xp = 62, price = 125, difficulty = 1.25 },
-            { item = 'squid', tier = 'rare', minWeight = 0.5, maxWeight = 2.4, rarity = 11, xp = 74, price = 165, difficulty = 1.35 },
-            { item = 'golden_tuna', tier = 'epic', minWeight = 4.0, maxWeight = 9.2, rarity = 6, xp = 132, price = 340, difficulty = 1.6 }
+            { item = 'anchovy', label = 'Ansjovis', tier = 'common', minWeight = 0.3, maxWeight = 1.0, rarity = 42, xp = 30, price = 45, difficulty = 0.9 },
+            { item = 'mackerel', label = 'Makrill', tier = 'uncommon', minWeight = 0.8, maxWeight = 2.1, rarity = 25, xp = 46, price = 85, difficulty = 1.1 },
+            { item = 'sea_bass', label = 'Havsabborre', tier = 'uncommon', minWeight = 1.2, maxWeight = 3.4, rarity = 16, xp = 62, price = 125, difficulty = 1.25 },
+            { item = 'squid', label = 'Bläckfisk', tier = 'rare', minWeight = 0.5, maxWeight = 2.4, rarity = 11, xp = 74, price = 165, difficulty = 1.35 },
+            { item = 'golden_tuna', label = 'Gyllene tonfisk', tier = 'epic', minWeight = 4.0, maxWeight = 9.2, rarity = 6, xp = 132, price = 340, difficulty = 1.6 }
         }
     },
     {
@@ -110,11 +110,11 @@ Config.Zones = {
         minLevel = 2,
         xpMultiplier = 1.22,
         species = {
-            { item = 'perch', tier = 'common', minWeight = 0.6, maxWeight = 1.8, rarity = 34, xp = 44, price = 70, difficulty = 1.0 },
-            { item = 'pike', tier = 'uncommon', minWeight = 1.6, maxWeight = 4.4, rarity = 28, xp = 75, price = 160, difficulty = 1.28 },
-            { item = 'salmon', tier = 'rare', minWeight = 2.0, maxWeight = 5.8, rarity = 22, xp = 88, price = 220, difficulty = 1.34 },
-            { item = 'sturgeon', tier = 'epic', minWeight = 4.2, maxWeight = 11.6, rarity = 12, xp = 142, price = 440, difficulty = 1.72 },
-            { item = 'mythic_carp', tier = 'legendary', minWeight = 6.5, maxWeight = 13.0, rarity = 4, xp = 220, price = 720, difficulty = 2.0 }
+            { item = 'perch', label = 'Abborre', tier = 'common', minWeight = 0.6, maxWeight = 1.8, rarity = 34, xp = 44, price = 70, difficulty = 1.0 },
+            { item = 'pike', label = 'Gädda', tier = 'uncommon', minWeight = 1.6, maxWeight = 4.4, rarity = 28, xp = 75, price = 160, difficulty = 1.28 },
+            { item = 'salmon', label = 'Lax', tier = 'rare', minWeight = 2.0, maxWeight = 5.8, rarity = 22, xp = 88, price = 220, difficulty = 1.34 },
+            { item = 'sturgeon', label = 'Stör', tier = 'epic', minWeight = 4.2, maxWeight = 11.6, rarity = 12, xp = 142, price = 440, difficulty = 1.72 },
+            { item = 'mythic_carp', label = 'Mytisk karp', tier = 'legendary', minWeight = 6.5, maxWeight = 13.0, rarity = 4, xp = 220, price = 720, difficulty = 2.0 }
         }
     }
 }

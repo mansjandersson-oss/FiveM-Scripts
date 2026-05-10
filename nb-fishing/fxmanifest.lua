@@ -18,9 +18,9 @@ files {
 
 shared_scripts {
     '@ox_lib/init.lua',
-    'locales/locale.lua',
+    'config.lua',
     'skilltree.lua',
-    'config.lua'
+    'locales/locale.lua'
 }
 
 client_scripts {

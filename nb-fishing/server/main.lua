@@ -1,11 +1,28 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
 local FishingData = {}
+local PendingCatches = {}
 local Tournament = {
     active = false,
     endsAt = 0,
     catches = {}
 }
+
+local ZonesById = {}
+local FishSaleCatalog = {}
+local SizeClassesById = {}
+
+for _, zone in ipairs(Config.Zones or {}) do
+    ZonesById[zone.id] = zone
+
+    for _, fish in ipairs(zone.species or {}) do
+        FishSaleCatalog[fish.item] = FishSaleCatalog[fish.item] or fish
+    end
+end
+
+for _, class in ipairs(Config.SizeClasses or {}) do
+    SizeClassesById[class.id] = class
+end
 
 local function debugPrint(msg)
     if Config.Debug then
@@ -40,7 +57,9 @@ local function normalizeSkills(skillData)
     local normalized = getDefaultSkills()
     if type(skillData) ~= 'table' then return normalized end
     for skillId in pairs(normalized) do
-        normalized[skillId] = tonumber(skillData[skillId]) or 0
+        local skillCfg = Config.SkillTree.skills[skillId]
+        local value = tonumber(skillData[skillId]) or 0
+        normalized[skillId] = math.max(0, math.min(value, skillCfg.maxLevel or value))
     end
     return normalized
 end
@@ -62,6 +81,13 @@ local function getSkillBonus(data, skillId)
     return (skillCfg.effectPerLevel or 0.0) * (data.skills[skillId] or 0)
 end
 
+local function markDirty(source)
+    local data = FishingData[source]
+    if data then
+        data._dirty = true
+    end
+end
+
 local function ensurePlayerData(source)
     if FishingData[source] then return FishingData[source] end
     local Player = QBCore.Functions.GetPlayer(source)
@@ -76,14 +102,25 @@ local function ensurePlayerData(source)
         perfectCatches = 0,
         bestWeight = 0.0,
         totalEarned = 0,
-        skills = getDefaultSkills()
+        skills = getDefaultSkills(),
+        _dirty = true
     }
 
     return FishingData[source]
 end
 
 local function syncPlayer(source)
-    TriggerClientEvent('nb-fishing:client:updateData', source, FishingData[source], Tournament)
+    local data = FishingData[source]
+    if not data then return end
+
+    local payload = {}
+    for key, value in pairs(data) do
+        if key ~= '_dirty' then
+            payload[key] = value
+        end
+    end
+
+    TriggerClientEvent('nb-fishing:client:updateData', source, payload, Tournament)
 end
 
 local function addXP(source, amount)
@@ -101,12 +138,14 @@ local function addXP(source, amount)
         TriggerClientEvent('QBCore:Notify', source, L('skill_point'), 'success')
     end
 
+    markDirty(source)
     syncPlayer(source)
 end
 
-local function saveBySource(source)
+local function saveBySource(source, force)
     local data = FishingData[source]
     if not data then return end
+    if not force and not data._dirty then return end
 
     MySQL.insert.await('INSERT INTO fishing_progress (citizenid, xp, level, skill_points, total_caught, perfect_catches, best_weight, total_earned, skill_data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level), skill_points = VALUES(skill_points), total_caught = VALUES(total_caught), perfect_catches = VALUES(perfect_catches), best_weight = VALUES(best_weight), total_earned = VALUES(total_earned), skill_data = VALUES(skill_data)', {
         data.cid,
@@ -119,6 +158,8 @@ local function saveBySource(source)
         data.totalEarned,
         json.encode(data.skills)
     })
+
+    data._dirty = false
 end
 
 local function loadBySource(source)
@@ -136,7 +177,8 @@ local function loadBySource(source)
             perfectCatches = row.perfect_catches or 0,
             bestWeight = row.best_weight or 0.0,
             totalEarned = row.total_earned or 0,
-            skills = normalizeSkills(row.skill_data and json.decode(row.skill_data) or {})
+            skills = normalizeSkills(row.skill_data and json.decode(row.skill_data) or {}),
+            _dirty = false
         }
     else
         FishingData[source] = nil
@@ -147,11 +189,7 @@ local function loadBySource(source)
 end
 
 local function getZoneById(zoneId)
-    for _, zone in ipairs(Config.Zones) do
-        if zone.id == zoneId then
-            return zone
-        end
-    end
+    return ZonesById[zoneId]
 end
 
 
@@ -192,7 +230,17 @@ local function applyRodDurability(source, rodSlot, didCatch)
     local data = ensurePlayerData(source)
     local maintenanceBonus = getSkillBonus(data, 'rod_maintenance')
     local rawLoss = didCatch and catchLoss or escapeLoss
-    local loss = math.max(1, math.floor(rawLoss * (1.0 - maintenanceBonus) + 0.5))
+    local effectiveLoss = math.max(0.0, rawLoss * (1.0 - maintenanceBonus))
+    local wearProgress = (tonumber(metadata.rod_wear_progress) or 0.0) + effectiveLoss
+    local loss = math.floor(wearProgress)
+    metadata.rod_wear_progress = wearProgress - loss
+
+    if loss <= 0 then
+        exports.ox_inventory:SetMetadata(source, rodSlot.slot, metadata)
+        TriggerClientEvent('QBCore:Notify', source, L('rod_protected'), 'primary')
+        return true
+    end
+
     usesLeft = usesLeft - loss
 
     if usesLeft <= 0 then
@@ -215,11 +263,18 @@ end
 local function weightedSpecies(speciesList, trophyBonus)
     local weighted = {}
     local total = 0
+
+    local tierBoosts = {
+        common = -0.35,
+        uncommon = 0.25,
+        rare = 1.5,
+        epic = 2.0,
+        legendary = 2.75
+    }
+
     for _, fish in ipairs(speciesList) do
-        local adjusted = fish.rarity
-        if fish.rarity <= 12 then
-            adjusted = adjusted * (1.0 + trophyBonus)
-        end
+        local tierBoost = tierBoosts[fish.tier or 'common'] or 0.0
+        local adjusted = fish.rarity * math.max(0.25, 1.0 + (trophyBonus * tierBoost))
         total = total + adjusted
         weighted[#weighted + 1] = { fish = fish, weight = adjusted }
     end
@@ -236,13 +291,46 @@ local function weightedSpecies(speciesList, trophyBonus)
     return weighted[#weighted].fish
 end
 
+local function randomWeight(fish)
+    local minWeight = tonumber(fish.minWeight) or 0.2
+    local maxWeight = tonumber(fish.maxWeight) or minWeight
+    if maxWeight < minWeight then
+        maxWeight = minWeight
+    end
+
+    return math.floor((minWeight + (math.random() * (maxWeight - minWeight))) * 100 + 0.5) / 100
+end
+
+local function createCatchId(source)
+    return ('%s:%s:%s'):format(source, os.time(), math.random(100000, 999999))
+end
+
+local function getSkillEffects(data)
+    return {
+        steadyHands = getSkillBonus(data, 'steady_hands'),
+        fishReader = getSkillBonus(data, 'fish_reader'),
+        efficientBaiting = getSkillBonus(data, 'efficient_baiting'),
+        trophyHunter = getSkillBonus(data, 'trophy_hunter'),
+        fishMonger = getSkillBonus(data, 'fish_monger'),
+        rodMaintenance = getSkillBonus(data, 'rod_maintenance')
+    }
+end
+
 
 QBCore.Functions.CreateUseableItem(Config.Items.Rod, function(source)
     TriggerClientEvent('nb-fishing:client:useFishingRod', source)
 end)
 
 QBCore.Functions.CreateCallback('nb-fishing:server:getBootstrap', function(source, cb)
-    cb(ensurePlayerData(source), Config, Tournament)
+    local data = ensurePlayerData(source)
+    local payload = {}
+    for key, value in pairs(data or {}) do
+        if key ~= '_dirty' then
+            payload[key] = value
+        end
+    end
+
+    cb(payload, Config, Tournament)
 end)
 
 QBCore.Functions.CreateCallback('nb-fishing:server:getLeaderboard', function(_, cb)
@@ -257,6 +345,14 @@ RegisterNetEvent('nb-fishing:server:startCatch', function(zoneId)
     local zone = getZoneById(zoneId)
 
     if not Player or not data or not zone then return end
+
+    if PendingCatches[src] and PendingCatches[src].expiresAt > os.time() then
+        TriggerClientEvent('QBCore:Notify', src, L('catch_already_active'), 'error')
+        return
+    end
+
+    PendingCatches[src] = nil
+
     if data.level < zone.minLevel then
         TriggerClientEvent('QBCore:Notify', src, L('level_locked'), 'error')
         return
@@ -278,18 +374,32 @@ RegisterNetEvent('nb-fishing:server:startCatch', function(zoneId)
     local baitSaveChance = getSkillBonus(data, 'efficient_baiting')
     if math.random() > baitSaveChance then
         exports.ox_inventory:RemoveItem(src, Config.Items.Bait, 1)
+    elseif baitSaveChance > 0 then
+        TriggerClientEvent('QBCore:Notify', src, L('bait_saved'), 'primary')
     end
 
     local fish = weightedSpecies(zone.species, getSkillBonus(data, 'trophy_hunter'))
     local fishAggression = fish.difficulty * (1.0 - getSkillBonus(data, 'fish_reader'))
     local barHeight = Config.Minigame.barHeight + getSkillBonus(data, 'steady_hands')
+    local catchWindow = Config.DefaultCatchWindow
+    local catchId = createCatchId(src)
+
+    PendingCatches[src] = {
+        id = catchId,
+        zoneId = zone.id,
+        fish = fish,
+        expiresAt = os.time() + math.ceil(catchWindow) + 8
+    }
 
     TriggerClientEvent('nb-fishing:client:beginMinigame', src, {
+        catchId = catchId,
         fish = fish,
         zoneId = zone.id,
+        zoneLabel = zone.label,
         barHeight = barHeight,
         aggression = fishAggression,
-        catchWindow = Config.DefaultCatchWindow
+        catchWindow = catchWindow,
+        skillEffects = getSkillEffects(data)
     })
 
     TriggerClientEvent('QBCore:Notify', src, L('cast_started'), 'primary')
@@ -301,7 +411,15 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
     local data = ensurePlayerData(src)
     if not Player or not data or type(payload) ~= 'table' then return end
 
-    local zone = getZoneById(payload.zoneId)
+    local pending = PendingCatches[src]
+    PendingCatches[src] = nil
+
+    if not pending or pending.id ~= payload.catchId or pending.expiresAt < os.time() then
+        TriggerClientEvent('QBCore:Notify', src, L('catch_expired'), 'error')
+        return
+    end
+
+    local zone = getZoneById(pending.zoneId)
     if not zone then return end
 
     local rodSlot = exports.ox_inventory:GetSlotWithItem(src, Config.Items.Rod, nil, false)
@@ -314,8 +432,8 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
 
     applyRodDurability(src, rodSlot, true)
 
-    local fish = payload.fish
-    local weight = tonumber(payload.weight) or fish.minWeight
+    local fish = pending.fish
+    local weight = randomWeight(fish)
     local tier = getTierData(fish.tier)
     local sizeClass = getSizeClass(fish, weight)
     local xp = math.floor((fish.xp * zone.xpMultiplier * (tier.xpMultiplier or 1.0) * (sizeClass.xpMultiplier or 1.0)) + (weight * 5.0))
@@ -332,6 +450,7 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
     end
 
     exports.ox_inventory:AddItem(src, fish.item, 1, {
+        label = fish.label,
         quality = isPerfect and 'perfect' or 'normal',
         weight = weight,
         size = sizeClass.id,
@@ -343,7 +462,7 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
     })
 
     addXP(src, xp)
-    TriggerClientEvent('QBCore:Notify', src, L('catch_success', tier.label, sizeClass.label, fish.item, weight), 'success')
+    TriggerClientEvent('QBCore:Notify', src, L('catch_success', tier.label, sizeClass.label, fish.label or fish.item, weight), 'success')
     TriggerClientEvent('QBCore:Notify', src, L('xp_gain', xp), 'primary')
 
     if Tournament.active then
@@ -353,12 +472,13 @@ RegisterNetEvent('nb-fishing:server:finishCatch', function(payload)
                 source = src,
                 cid = data.cid,
                 weight = weight,
-                fish = fish.item
+                fish = fish.label or fish.item
             }
         end
     end
 
-    sendDiscordLog('Fisk fångad', ('%s fångade %s %.2fkg'):format(data.cid, fish.item, weight), isPerfect and 3066993 or 3447003)
+    sendDiscordLog('Fisk fångad', ('%s fångade %s %.2fkg'):format(data.cid, fish.label or fish.item, weight), isPerfect and 3066993 or 3447003)
+    markDirty(src)
     syncPlayer(src)
 end)
 
@@ -369,37 +489,30 @@ RegisterNetEvent('nb-fishing:server:sellInventoryFish', function()
     if not Player or not data then return end
 
     local payout = 0
-    for _, zone in ipairs(Config.Zones) do
-        for _, fish in ipairs(zone.species) do
-            local items = exports.ox_inventory:Search(src, 'slots', fish.item)
-            if items and #items > 0 then
-                for _, slot in ipairs(items) do
-                    local weightBonus = 1.0
-                    if slot.metadata and slot.metadata.weight then
-                        weightBonus = 1.0 + ((slot.metadata.weight - fish.minWeight) * 0.03)
-                    end
-                    local perfectBonus = (slot.metadata and slot.metadata.quality == 'perfect') and 1.2 or 1.0
-                    local tierMultiplier = 1.0
-                    local sizeMultiplier = 1.0
-
-                    if slot.metadata and slot.metadata.tier then
-                        tierMultiplier = getTierData(slot.metadata.tier).payoutMultiplier or 1.0
-                    elseif fish.tier then
-                        tierMultiplier = getTierData(fish.tier).payoutMultiplier or 1.0
-                    end
-
-                    if slot.metadata and slot.metadata.size then
-                        for _, class in ipairs(Config.SizeClasses or {}) do
-                            if class.id == slot.metadata.size then
-                                sizeMultiplier = class.payoutMultiplier or 1.0
-                                break
-                            end
-                        end
-                    end
-
-                    payout = payout + math.floor(fish.price * slot.count * weightBonus * perfectBonus * tierMultiplier * sizeMultiplier)
-                    exports.ox_inventory:RemoveItem(src, fish.item, slot.count, slot.metadata, slot.slot)
+    for item, fish in pairs(FishSaleCatalog) do
+        local items = exports.ox_inventory:Search(src, 'slots', item)
+        if items and #items > 0 then
+            for _, slot in ipairs(items) do
+                local weightBonus = 1.0
+                if slot.metadata and slot.metadata.weight then
+                    weightBonus = 1.0 + ((slot.metadata.weight - fish.minWeight) * 0.03)
                 end
+                local perfectBonus = (slot.metadata and slot.metadata.quality == 'perfect') and 1.2 or 1.0
+                local tierMultiplier = 1.0
+                local sizeMultiplier = 1.0
+
+                if slot.metadata and slot.metadata.tier then
+                    tierMultiplier = getTierData(slot.metadata.tier).payoutMultiplier or 1.0
+                elseif fish.tier then
+                    tierMultiplier = getTierData(fish.tier).payoutMultiplier or 1.0
+                end
+
+                if slot.metadata and slot.metadata.size and SizeClassesById[slot.metadata.size] then
+                    sizeMultiplier = SizeClassesById[slot.metadata.size].payoutMultiplier or 1.0
+                end
+
+                payout = payout + math.floor(fish.price * slot.count * weightBonus * perfectBonus * tierMultiplier * sizeMultiplier)
+                exports.ox_inventory:RemoveItem(src, item, slot.count, slot.metadata, slot.slot)
             end
         end
     end
@@ -410,7 +523,10 @@ RegisterNetEvent('nb-fishing:server:sellInventoryFish', function()
         Player.Functions.AddMoney('cash', payout, 'fish-sale')
         data.totalEarned = data.totalEarned + payout
         TriggerClientEvent('QBCore:Notify', src, L('sold_fish', payout), 'success')
+        markDirty(src)
         syncPlayer(src)
+    else
+        TriggerClientEvent('QBCore:Notify', src, L('no_fish_to_sell'), 'error')
     end
 end)
 
@@ -437,6 +553,7 @@ RegisterNetEvent('nb-fishing:server:upgradeSkill', function(skillId)
     data.skills[skillId] = current + 1
 
     TriggerClientEvent('QBCore:Notify', src, L('skill_upgraded', skillCfg.label, data.skills[skillId]), 'success')
+    markDirty(src)
     syncPlayer(src)
 end)
 
@@ -511,15 +628,17 @@ RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
 end)
 
 RegisterNetEvent('QBCore:Server:OnPlayerUnload', function()
-    saveBySource(source)
+    saveBySource(source, true)
     FishingData[source] = nil
     Tournament.catches[source] = nil
+    PendingCatches[source] = nil
 end)
 
 AddEventHandler('playerDropped', function()
-    saveBySource(source)
+    saveBySource(source, true)
     FishingData[source] = nil
     Tournament.catches[source] = nil
+    PendingCatches[source] = nil
 end)
 
 exports(Config.Exports.GetFishingLevel, function(source)

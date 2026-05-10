@@ -4,6 +4,7 @@ local PlayerData = nil
 local TournamentData = nil
 local MinigameActive = false
 local CurrentZone = nil
+local CurrentCatchId = nil
 local SellPed = nil
 
 local function loadModel(model)
@@ -44,9 +45,18 @@ local function openSkillMenu()
 
     for skillId, skillCfg in pairs(Config.SkillTree.skills) do
         local lvl = PlayerData.skills[skillId] or 0
+        local nextLvl = math.min(lvl + 1, skillCfg.maxLevel)
+        local currentEffect = (skillCfg.effectPerLevel or 0.0) * lvl * 100.0
+        local nextEffect = (skillCfg.effectPerLevel or 0.0) * nextLvl * 100.0
+        local description = skillCfg.description
+
+        if skillCfg.effectLabel then
+            description = ('%s\n%s'):format(description, skillCfg.effectLabel:format(currentEffect, nextEffect))
+        end
+
         options[#options + 1] = {
             title = ('%s (%s/%s)'):format(skillCfg.label, lvl, skillCfg.maxLevel),
-            description = skillCfg.description,
+            description = description,
             icon = 'star',
             disabled = lvl >= skillCfg.maxLevel,
             onSelect = function()
@@ -113,6 +123,7 @@ end)
 RegisterNetEvent('nb-fishing:client:beginMinigame', function(payload)
     if MinigameActive then return end
     MinigameActive = true
+    CurrentCatchId = payload.catchId
 
     SetNuiFocus(true, true)
     SendNUIMessage({
@@ -120,9 +131,12 @@ RegisterNetEvent('nb-fishing:client:beginMinigame', function(payload)
         config = {
             minigame = Config.Minigame,
             fish = payload.fish,
+            zoneLabel = payload.zoneLabel,
+            catchId = payload.catchId,
             aggression = payload.aggression,
             barHeight = payload.barHeight,
-            catchWindow = payload.catchWindow
+            catchWindow = payload.catchWindow,
+            skillEffects = payload.skillEffects
         }
     })
 end)
@@ -135,23 +149,15 @@ RegisterNUICallback('finish', function(data, cb)
 
     if not CurrentZone then return end
 
-    local fish = data.fish
-    if fish then
-        fish.item = tostring(fish.item)
-        fish.minWeight = tonumber(fish.minWeight)
-        fish.maxWeight = tonumber(fish.maxWeight)
-        fish.xp = tonumber(fish.xp)
-    end
-
     TriggerServerEvent('nb-fishing:server:finishCatch', {
         success = data.success == true,
         perfect = data.perfect == true,
-        fish = fish,
-        weight = tonumber(data.weight),
+        catchId = CurrentCatchId,
         zoneId = CurrentZone.id
     })
 
     CurrentZone = nil
+    CurrentCatchId = nil
 end)
 
 CreateThread(function()
