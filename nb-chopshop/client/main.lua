@@ -1,17 +1,14 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local actionBusy = false
 
--- ─── Körtidsstatus ───────────────────────────────────────────────────────────
-local strippedParts    = {}   -- [vehicleNetId] = { partName = true, ... }
-local chopZoneActive   = false
-local chopZoneVehicle  = nil  -- fordon som just nu står parkerat och demonteras
-local npcEntities      = {}   -- spawnade NPC-ped handles
-local contractVehicles = {}   -- { entity, blip, model } för kriminella kontraktsspawns
-local civilianVehicleBlip = nil
-local activeContractData  = { vehicles = nil, completed = {} }
-local activeCivilianVehicleNetId = nil
-
--- ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
+local strippedParts = {}
+local chopZoneActive = false
+local chopZoneVehicle = nil
+local npcEntities = {}
+local activeContractData = { vehicles = nil, completed = {} }
+local markedForScrap = {}
+local contractUiOpen = false
+local vehicleTargetsReady = false
 
 local function t(key, ...)
     local lang = Locales[Config.Locale] or Locales.en
@@ -31,7 +28,7 @@ local function debugPrint(message, ...)
         message = message:format(...)
     end
 
-    print(('[chopshop:debug:client] %s'):format(message))
+    print(('[nb-chopshop:debug:client] %s'):format(message))
 end
 
 local function runAction(label, duration, anim)
@@ -39,14 +36,15 @@ local function runAction(label, duration, anim)
         notify(t('busy_action'), 'error')
         return false
     end
+
     actionBusy = true
     local completed = lib.progressCircle({
-        duration     = duration,
-        label        = label,
+        duration = duration,
+        label = label,
         useWhileDead = false,
-        canCancel    = true,
-        disable      = { move = true, car = true, combat = true, mouse = false },
-        anim         = anim
+        canCancel = true,
+        disable = { move = true, car = true, combat = true, mouse = false },
+        anim = anim,
     })
     actionBusy = false
     return completed
@@ -58,8 +56,6 @@ local function runSkillMinigame(cfg)
     return ok
 end
 
--- Väntar synkront på att en modell ska laddas, upp till Config.ModelLoadTimeout ms.
--- Returnerar true om modellen laddades, annars false.
 local function loadModel(model)
     RequestModel(model)
     local timeout = 0
@@ -70,24 +66,47 @@ local function loadModel(model)
     return HasModelLoaded(model)
 end
 
-
 local function resolveModelHash(model)
     if type(model) == 'number' then return model end
-    if type(model) == 'string' then
-        return GetHashKey(model)
-    end
+    if type(model) == 'string' then return GetHashKey(model) end
     return 0
 end
 
--- ─── Hjälpare för delspårning ────────────────────────────────────────────────
+local function getVehicleNetId(vehicle)
+    if not DoesEntityExist(vehicle) then return nil end
+
+    if not NetworkGetEntityIsNetworked(vehicle) then
+        NetworkRegisterEntityAsNetworked(vehicle)
+        Wait(0)
+    end
+
+    local netId = NetworkGetNetworkIdFromEntity(vehicle)
+    if not netId or netId == 0 then return nil end
+
+    SetNetworkIdCanMigrate(netId, true)
+    return netId
+end
 
 local function isPartStripped(netId, name)
     return strippedParts[netId] and strippedParts[netId][name] == true
 end
 
 local function markPartStripped(netId, name)
-    if not strippedParts[netId] then strippedParts[netId] = {} end
+    strippedParts[netId] = strippedParts[netId] or {}
     strippedParts[netId][name] = true
+end
+
+local function isVehicleMarkedForScrap(netId)
+    return markedForScrap[netId] == true
+end
+
+local function lockVehicleForScrap(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+
+    SetVehicleDoorsLocked(vehicle, 2)
+    SetVehicleDoorsLockedForAllPlayers(vehicle, true)
+    SetVehicleEngineOn(vehicle, false, true, true)
+    SetVehicleUndriveable(vehicle, true)
 end
 
 local function getVehicleDoorCount(vehicle)
@@ -97,7 +116,7 @@ local function getVehicleDoorCount(vehicle)
         GetEntityBoneIndexByName(vehicle, 'door_dside_f'),
         GetEntityBoneIndexByName(vehicle, 'door_pside_f'),
         GetEntityBoneIndexByName(vehicle, 'door_dside_r'),
-        GetEntityBoneIndexByName(vehicle, 'door_pside_r')
+        GetEntityBoneIndexByName(vehicle, 'door_pside_r'),
     }
 
     local count = 0
@@ -114,24 +133,24 @@ end
 
 local function getDoorIndexForPart(partName)
     local map = {
-        driver_door    = 0,
+        driver_door = 0,
         passenger_door = 1,
         rear_left_door = 2,
         rear_right_door = 3,
-        hood           = 4,
-        trunk          = 5,
+        hood = 4,
+        trunk = 5,
     }
     return map[partName]
 end
 
 local function getPartBoneName(partName)
     local map = {
-        driver_door     = 'door_dside_f',
-        passenger_door  = 'door_pside_f',
-        rear_left_door  = 'door_dside_r',
+        driver_door = 'door_dside_f',
+        passenger_door = 'door_pside_f',
+        rear_left_door = 'door_dside_r',
         rear_right_door = 'door_pside_r',
-        hood            = 'bonnet',
-        trunk           = 'boot'
+        hood = 'bonnet',
+        trunk = 'boot',
     }
     return map[partName]
 end
@@ -140,15 +159,11 @@ local function isPlayerNearVehiclePart(vehicle, partName)
     local ped = PlayerPedId()
     if not DoesEntityExist(vehicle) then return false end
 
-    local checkDist = 2.2
     local partBone = getPartBoneName(partName)
-
     if partBone then
         local boneIndex = GetEntityBoneIndexByName(vehicle, partBone)
         if boneIndex and boneIndex ~= -1 then
-            local partCoords = GetWorldPositionOfEntityBone(vehicle, boneIndex)
-            local pedCoords = GetEntityCoords(ped)
-            return #(pedCoords - partCoords) <= checkDist
+            return #(GetEntityCoords(ped) - GetWorldPositionOfEntityBone(vehicle, boneIndex)) <= 2.2
         end
     end
 
@@ -156,8 +171,7 @@ local function isPlayerNearVehiclePart(vehicle, partName)
     if doorIndex then
         local doorCoords = GetEntryPositionOfDoor(vehicle, doorIndex)
         if doorCoords and type(doorCoords) == 'vector3' then
-            local pedCoords = GetEntityCoords(ped)
-            return #(pedCoords - doorCoords) <= checkDist
+            return #(GetEntityCoords(ped) - doorCoords) <= 2.2
         end
     end
 
@@ -167,9 +181,7 @@ end
 local function hideStrippedPartOnVehicle(vehicle, partName)
     if not DoesEntityExist(vehicle) then return end
     local doorIndex = getDoorIndexForPart(partName)
-    if not doorIndex then return end
-
-    SetVehicleDoorBroken(vehicle, doorIndex, true)
+    if doorIndex then SetVehicleDoorBroken(vehicle, doorIndex, true) end
 end
 
 local function shouldShowStripPartForVehicle(vehicle, part)
@@ -180,8 +192,7 @@ local function shouldShowStripPartForVehicle(vehicle, part)
 end
 
 local function allPartsStripped(vehicle, netId)
-    if not strippedParts[netId] then return false end
-    if not vehicle or not DoesEntityExist(vehicle) then return false end
+    if not strippedParts[netId] or not DoesEntityExist(vehicle) then return false end
 
     for _, part in ipairs(Config.StripParts) do
         if shouldShowStripPartForVehicle(vehicle, part) and not strippedParts[netId][part.name] then
@@ -191,29 +202,19 @@ local function allPartsStripped(vehicle, netId)
     return true
 end
 
--- ─── Hantering av fordons-target ─────────────────────────────────────────────
-
 local function clearVehicleTarget(vehicle)
     if not DoesEntityExist(vehicle) then return end
-    local names = { 'chop_strip_frame' }
-    for _, p in ipairs(Config.StripParts) do
-        names[#names + 1] = 'chop_strip_' .. p.name
+
+    local names = { 'chop_mark_vehicle', 'chop_strip_frame' }
+    for _, part in ipairs(Config.StripParts) do
+        names[#names + 1] = 'chop_strip_' .. part.name
     end
     exports.ox_target:removeLocalEntity(vehicle, names)
 end
 
-local function removeContractVehicleEntry(vehicle)
-    for i, cv in ipairs(contractVehicles) do
-        if cv.entity == vehicle then
-            if DoesBlipExist(cv.blip) then RemoveBlip(cv.blip) end
-            table.remove(contractVehicles, i)
-            return
-        end
-    end
-end
-
 local function despawnVehicle(vehicle)
     if not DoesEntityExist(vehicle) then return end
+
     if not NetworkHasControlOfEntity(vehicle) then
         NetworkRequestControlOfEntity(vehicle)
         local timeout = 0
@@ -222,6 +223,7 @@ local function despawnVehicle(vehicle)
             timeout = timeout + 10
         end
     end
+
     if DoesEntityExist(vehicle) then
         SetEntityAsMissionEntity(vehicle, true, true)
         DeleteEntity(vehicle)
@@ -229,18 +231,11 @@ local function despawnVehicle(vehicle)
 end
 
 local function isVehicleAllowedForCurrentJob(vehicle)
-    if not DoesEntityExist(vehicle) then return false end
-    local vehicleNetId = NetworkGetNetworkIdFromEntity(vehicle)
-
-    if activeCivilianVehicleNetId then
-        return vehicleNetId == activeCivilianVehicleNetId
-    end
-
-    if not activeContractData.vehicles then return false end
+    if not DoesEntityExist(vehicle) or not activeContractData.vehicles then return false end
 
     local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)):lower()
-    for _, v in ipairs(activeContractData.vehicles) do
-        if v.model:lower() == modelName and not activeContractData.completed[v.model] then
+    for _, vehicleData in ipairs(activeContractData.vehicles) do
+        if vehicleData.model:lower() == modelName and not activeContractData.completed[vehicleData.model] then
             return true
         end
     end
@@ -248,123 +243,183 @@ local function isVehicleAllowedForCurrentJob(vehicle)
     return false
 end
 
--- Bygg och applicera ox_target-interaktioner på ett fordon i zonen.
--- Beräknas om varje gång en del demonteras så listan hålls korrekt.
 local function applyVehicleTarget(vehicle)
-    if not DoesEntityExist(vehicle) then return end
-    clearVehicleTarget(vehicle)
+    if not Config.Debug or not DoesEntityExist(vehicle) then return end
 
-    if not isVehicleAllowedForCurrentJob(vehicle) then
-        return
-    end
-
-    local netId   = NetworkGetNetworkIdFromEntity(vehicle)
-    local options = {}
-
-    -- Val för demontering av delar
-    for _, part in ipairs(Config.StripParts) do
-        if shouldShowStripPartForVehicle(vehicle, part) and not isPartStripped(netId, part.name) then
-            local pName     = part.name
-            local pItem     = part.item
-            local pLabel    = t(part.labelKey)
-            local pDuration = part.duration
-            local pAnim     = (pName == 'hood' or pName == 'trunk')
-                              and Config.Animations.hood
-                              or  Config.Animations.door
-
-            options[#options + 1] = {
-                name     = 'chop_strip_' .. pName,
-                label    = pLabel,
-                icon     = part.icon or 'fa-solid fa-screwdriver-wrench',
-                distance = 3.0,
-                onSelect = function()
-                    if not isPlayerNearVehiclePart(vehicle, pName) then
-                        notify(t('too_far_from_part'), 'error')
-                        return
-                    end
-
-                    if not runSkillMinigame(Config.Minigames.StripPart) then return end
-                    local done = runAction(pLabel, pDuration, pAnim)
-                    if not done then notify(t('action_cancelled'), 'error'); return end
-
-                    TriggerServerEvent('chopshop:server:StripPart', netId, pName, pItem)
-                    markPartStripped(netId, pName)
-                    hideStrippedPartOnVehicle(vehicle, pName)
-                    -- Uppdatera val (lägger till ramval när alla delar är klara)
-                    applyVehicleTarget(vehicle)
-                end
-            }
-        end
-    end
-
-    -- Ramdemontering (endast när alla andra delar är demonterade)
-    if allPartsStripped(vehicle, netId) then
-        local frameLabel = t(Config.FrameStrip.labelKey)
-        options[#options + 1] = {
-            name     = 'chop_strip_frame',
-            label    = frameLabel,
-            icon     = 'fa-solid fa-car-burst',
-            distance = 3.0,
-            onSelect = function()
-                if not runSkillMinigame(Config.Minigames.StripFrame) then return end
-
-                local modelHash = GetEntityModel(vehicle)
-                local modelName = GetDisplayNameFromVehicleModel(modelHash):lower()
-                local done      = runAction(frameLabel, Config.FrameStrip.duration, Config.Animations.frame)
-                if not done then notify(t('action_cancelled'), 'error'); return end
-
-                TriggerServerEvent('chopshop:server:StripFrame', netId, modelName)
-
-                if activeContractData.vehicles then
-                    activeContractData.completed[modelName] = true
-                end
-                if activeCivilianVehicleNetId and activeCivilianVehicleNetId == netId then
-                    activeCivilianVehicleNetId = nil
-                end
-
-                strippedParts[netId] = nil
-                clearVehicleTarget(vehicle)
-                removeContractVehicleEntry(vehicle)
-
-                if civilianVehicleBlip and DoesBlipExist(civilianVehicleBlip) then
-                    RemoveBlip(civilianVehicleBlip)
-                    civilianVehicleBlip = nil
-                end
-
-                despawnVehicle(vehicle)
-                chopZoneVehicle = nil
-            end
-        }
-    end
-
-    if #options > 0 then
-        exports.ox_target:addLocalEntity(vehicle, options)
+    local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)):lower()
+    if not activeContractData.vehicles then
+        debugPrint('vehicle target skipped, no active contract model=%s', modelName)
+    elseif not isVehicleAllowedForCurrentJob(vehicle) then
+        debugPrint('vehicle target skipped, model not in active contract model=%s', modelName)
     end
 end
 
--- ─── Chop-zon ────────────────────────────────────────────────────────────────
+local function selectedVehicle(data)
+    if type(data) == 'table' then return data.entity end
+    return data
+end
+
+local function canUseVehicleOption(vehicle)
+    return chopZoneActive and DoesEntityExist(vehicle) and isVehicleAllowedForCurrentJob(vehicle)
+end
+
+local function getMarkedNetId(vehicle)
+    if not DoesEntityExist(vehicle) then return nil end
+
+    local netId = NetworkGetNetworkIdFromEntity(vehicle)
+    if netId and netId ~= 0 and isVehicleMarkedForScrap(netId) then
+        return netId
+    end
+
+    return nil
+end
+
+local function setupVehicleTargets()
+    if vehicleTargetsReady then return end
+    vehicleTargetsReady = true
+
+    local options = {
+        {
+            name = 'chop_mark_vehicle',
+            label = t('mark_vehicle_for_scrap'),
+            icon = 'fa-solid fa-clipboard-check',
+            distance = 3.0,
+            canInteract = function(entity)
+                if not canUseVehicleOption(entity) then return false end
+                local netId = NetworkGetNetworkIdFromEntity(entity)
+                return not (netId and netId ~= 0 and isVehicleMarkedForScrap(netId))
+            end,
+            onSelect = function(data)
+                local vehicle = selectedVehicle(data)
+                if not DoesEntityExist(vehicle) then return end
+
+                local netId = getVehicleNetId(vehicle)
+                if not netId then
+                    notify(t('vehicle_network_failed'), 'error')
+                    debugPrint('failed to network vehicle for target')
+                    return
+                end
+
+                local done = runAction(t('marking_vehicle'), 2200, Config.Animations.frame)
+                if not done then
+                    notify(t('action_cancelled'), 'error')
+                    return
+                end
+
+                markedForScrap[netId] = true
+                lockVehicleForScrap(vehicle)
+                notify(t('vehicle_marked_for_scrap'), 'success')
+            end,
+        },
+    }
+
+    for _, part in ipairs(Config.StripParts) do
+        local partConfig = part
+        local partName = part.name
+        local partItem = part.item
+        local partLabel = t(part.labelKey)
+        local anim = (partName == 'hood' or partName == 'trunk') and Config.Animations.hood or Config.Animations.door
+
+        options[#options + 1] = {
+            name = 'chop_strip_' .. partName,
+            label = partLabel,
+            icon = part.icon or 'fa-solid fa-screwdriver-wrench',
+            distance = 3.0,
+            canInteract = function(entity)
+                if not canUseVehicleOption(entity) then return false end
+
+                local netId = getMarkedNetId(entity)
+                return netId ~= nil
+                    and shouldShowStripPartForVehicle(entity, partConfig)
+                    and not isPartStripped(netId, partName)
+            end,
+            onSelect = function(data)
+                local vehicle = selectedVehicle(data)
+                if not DoesEntityExist(vehicle) then return end
+
+                local netId = getMarkedNetId(vehicle)
+                if not netId then return end
+
+                if not isPlayerNearVehiclePart(vehicle, partName) then
+                    notify(t('too_far_from_part'), 'error')
+                    return
+                end
+
+                if not runSkillMinigame(Config.Minigames.StripPart) then return end
+
+                local done = runAction(partLabel, part.duration, anim)
+                if not done then
+                    notify(t('action_cancelled'), 'error')
+                    return
+                end
+
+                TriggerServerEvent('nb-chopshop:server:StripPart', netId, partName, partItem)
+                markPartStripped(netId, partName)
+                hideStrippedPartOnVehicle(vehicle, partName)
+            end,
+        }
+    end
+
+    local frameLabel = t(Config.FrameStrip.labelKey)
+    options[#options + 1] = {
+        name = 'chop_strip_frame',
+        label = frameLabel,
+        icon = 'fa-solid fa-car-burst',
+        distance = 3.0,
+        canInteract = function(entity)
+            if not canUseVehicleOption(entity) then return false end
+
+            local netId = getMarkedNetId(entity)
+            return netId ~= nil and allPartsStripped(entity, netId)
+        end,
+        onSelect = function(data)
+            local vehicle = selectedVehicle(data)
+            if not DoesEntityExist(vehicle) then return end
+
+            local netId = getMarkedNetId(vehicle)
+            if not netId then return end
+            if not runSkillMinigame(Config.Minigames.StripFrame) then return end
+
+            local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(vehicle)):lower()
+            local done = runAction(frameLabel, Config.FrameStrip.duration, Config.Animations.frame)
+            if not done then
+                notify(t('action_cancelled'), 'error')
+                return
+            end
+
+            TriggerServerEvent('nb-chopshop:server:StripFrame', netId, modelName)
+            activeContractData.completed[modelName] = true
+            strippedParts[netId] = nil
+            markedForScrap[netId] = nil
+            clearVehicleTarget(vehicle)
+            despawnVehicle(vehicle)
+            chopZoneVehicle = nil
+        end,
+    }
+
+    exports.ox_target:addGlobalVehicle(options)
+    debugPrint('registered global vehicle targets')
+end
 
 local function setupChopZone()
     lib.zones.sphere({
-        coords  = Config.ChopZone.coords,
-        radius  = Config.ChopZone.radius or 30.0,
-        debug   = Config.Debug,
+        coords = Config.ChopZone.coords,
+        radius = Config.ChopZone.radius or 30.0,
+        debug = Config.Debug,
         onEnter = function()
             chopZoneActive = true
             notify(t('entered_chop_zone'), 'inform')
         end,
-        onExit  = function()
+        onExit = function()
             chopZoneActive = false
             if chopZoneVehicle and DoesEntityExist(chopZoneVehicle) then
                 clearVehicleTarget(chopZoneVehicle)
             end
             chopZoneVehicle = nil
-        end
+        end,
     })
 end
 
--- Söker efter fordon medan spelaren är till fots inne i chop-zonen.
--- När ett nytt fordon hittas i närheten får det demonterings-targets.
 CreateThread(function()
     while true do
         if not chopZoneActive then
@@ -374,16 +429,15 @@ CreateThread(function()
             local ped = PlayerPedId()
 
             if GetVehiclePedIsIn(ped, false) == 0 then
-                -- Spelaren är till fots – hitta närmaste fordon
-                local pedCoords  = GetEntityCoords(ped)
-                local nearest    = nil
+                local pedCoords = GetEntityCoords(ped)
+                local nearest = nil
                 local nearestDist = Config.ChopZone.vehicleDetectionDistance
 
-                for _, veh in ipairs(GetGamePool('CVehicle')) do
-                    if DoesEntityExist(veh) and not IsEntityDead(veh) then
-                        local dist = #(GetEntityCoords(veh) - pedCoords)
+                for _, vehicle in ipairs(GetGamePool('CVehicle')) do
+                    if DoesEntityExist(vehicle) and not IsEntityDead(vehicle) then
+                        local dist = #(GetEntityCoords(vehicle) - pedCoords)
                         if dist < nearestDist then
-                            nearest     = veh
+                            nearest = vehicle
                             nearestDist = dist
                         end
                     end
@@ -393,53 +447,39 @@ CreateThread(function()
                     if chopZoneVehicle and DoesEntityExist(chopZoneVehicle) then
                         clearVehicleTarget(chopZoneVehicle)
                     end
+
                     chopZoneVehicle = nearest
                     if chopZoneVehicle then
                         applyVehicleTarget(chopZoneVehicle)
-                        -- Be servern kontrollera om modellen matchar ett kriminellt kontrakt
-                        local modelHash = GetEntityModel(chopZoneVehicle)
-                        local modelName = GetDisplayNameFromVehicleModel(modelHash):lower()
-                        TriggerServerEvent('chopshop:server:CheckContractVehicle', modelName)
+                        if activeContractData.vehicles then
+                            local modelName = GetDisplayNameFromVehicleModel(GetEntityModel(chopZoneVehicle)):lower()
+                            TriggerServerEvent('nb-chopshop:server:CheckContractVehicle', modelName)
+                        end
                     end
                 end
-            else
-                -- Spelaren gick in i ett fordon – dölj demonteringsval
-                if chopZoneVehicle and DoesEntityExist(chopZoneVehicle) then
-                    clearVehicleTarget(chopZoneVehicle)
-                    chopZoneVehicle = nil
-                end
+            elseif chopZoneVehicle and DoesEntityExist(chopZoneVehicle) then
+                clearVehicleTarget(chopZoneVehicle)
+                chopZoneVehicle = nil
             end
         end
     end
 end)
 
--- ─── Hjälpare för NPC-spawn ──────────────────────────────────────────────────
-
-
 local function spawnNPC(data, options)
     local model = resolveModelHash(data.model)
     if model == 0 or not IsModelValid(model) or not IsModelInCdimage(model) or not IsModelAPed(model) then
-        if Config.Debug then
-            print(('[chopshop] invalid NPC model: %s'):format(tostring(data.model)))
-        end
+        if Config.Debug then print(('[nb-chopshop] invalid NPC model: %s'):format(tostring(data.model))) end
         return nil
     end
 
     if not loadModel(model) then
-        if Config.Debug then
-            print(('[chopshop] failed to load NPC model: %s'):format(tostring(data.model)))
-        end
+        if Config.Debug then print(('[nb-chopshop] failed to load NPC model: %s'):format(tostring(data.model))) end
         return nil
     end
 
-    local ped = CreatePed(4, model,
-        data.coords.x, data.coords.y, data.coords.z - 1.0,
-        data.coords.w, true, true)
-
+    local ped = CreatePed(4, model, data.coords.x, data.coords.y, data.coords.z - 1.0, data.coords.w, true, true)
     if ped == 0 or not DoesEntityExist(ped) then
-        if Config.Debug then
-            print(('[chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model)))
-        end
+        if Config.Debug then print(('[nb-chopshop] failed to spawn NPC: %s'):format(tostring(data.name or data.model))) end
         SetModelAsNoLongerNeeded(model)
         return nil
     end
@@ -461,133 +501,105 @@ end
 local function normalizeRouteResult(result)
     if type(result) == 'string' then
         result = result:lower()
-        if result == 'criminal' or result == 'civilian' or result == 'both' then
-            return result
-        end
+        if result == 'criminal' or result == 'both' then return true end
+        if result == 'civilian' then return false end
     elseif type(result) == 'boolean' then
-        return result and 'criminal' or 'civilian'
+        return result
     elseif type(result) == 'table' then
-        if result.route and type(result.route) == 'string' then
+        if type(result.route) == 'string' then
             local route = result.route:lower()
-            if route == 'criminal' or route == 'civilian' or route == 'both' then
-                return route
-            end
+            if route == 'criminal' or route == 'both' then return true end
+            if route == 'civilian' then return false end
         end
 
-        local isCriminal = result.isCriminal == true
-                        or result.criminal == true
-                        or result.is_criminal == true
-        local isCivilian = result.isCivilian == true
-                        or result.civilian == true
-                        or result.is_civilian == true
-
-        if isCriminal and isCivilian then return 'both' end
-        if isCriminal then return 'criminal' end
-        if isCivilian then return 'civilian' end
+        if result.isCriminal == true or result.criminal == true or result.is_criminal == true then return true end
+        if result.isCivilian == true or result.civilian == true or result.is_civilian == true then return false end
     end
 
     return nil
 end
 
-local function getPlayerRoute()
-    local debugOptions = Config.DebugOptions or {}
-    if Config.Debug and debugOptions.bypassRoleCheck then
-        local forcedRoute = debugOptions.forcedRoute or 'criminal'
-        debugPrint('role check bypassed, forced route=%s', forcedRoute)
-        return forcedRoute
-    end
+local function hasConfiguredAccess()
+    local access = Config.CriminalAccess or {}
+    local jobs = access.jobs or {}
+    local gangs = access.gangs or {}
+    local playerData = QBCore.Functions.GetPlayerData()
+    local jobName = playerData.job and playerData.job.name
+    local gangName = playerData.gang and playerData.gang.name
 
-    local roleCfg = Config.RoleCheckExport
-    if not roleCfg or not roleCfg.resource or not roleCfg.func then
-        debugPrint('RoleCheckExport saknas, fallback route=civilian')
-        return 'civilian'
-    end
-
-    local exportRes = exports[roleCfg.resource]
-    if not exportRes or not exportRes[roleCfg.func] then
-        debugPrint('RoleCheckExport hittades inte: %s.%s, fallback route=civilian', tostring(roleCfg.resource), tostring(roleCfg.func))
-        return 'civilian'
-    end
-
-    local ok, result = pcall(function()
-        if roleCfg.passServerId then
-            return exportRes[roleCfg.func](GetPlayerServerId(PlayerId()))
-        end
-        return exportRes[roleCfg.func]()
-    end)
-
-    if ok then
-        local route = normalizeRouteResult(result)
-        if route then
-            debugPrint('RoleCheckExport result=%s route=%s', tostring(result), route)
-            return route
-        end
-        debugPrint('RoleCheckExport gav ett okänt svar: %s', tostring(result))
-    else
-        debugPrint('RoleCheckExport error: %s', tostring(result))
-    end
-
-    return 'civilian'
+    return (jobName and jobs[jobName] == true) or (gangName and gangs[gangName] == true)
 end
 
 local function canUseCriminalOptions()
-    local route = getPlayerRoute()
-    return route == 'criminal' or route == 'both'
-end
+    local debugOptions = Config.DebugOptions or {}
+    if Config.Debug and debugOptions.bypassRoleCheck then
+        local forcedRoute = tostring(debugOptions.forcedRoute or 'criminal'):lower()
+        local allowed = forcedRoute == 'criminal' or forcedRoute == 'both'
+        debugPrint('role check bypassed, forcedRoute=%s allowed=%s', forcedRoute, tostring(allowed))
+        return allowed
+    end
 
-local function canUseCivilianOptions()
-    local route = getPlayerRoute()
-    return route == 'civilian' or route == 'both'
-end
+    local roleCfg = Config.RoleCheckExport
+    if roleCfg and roleCfg.resource and roleCfg.func then
+        local exportRes = exports[roleCfg.resource]
+        if exportRes and exportRes[roleCfg.func] then
+            local ok, result = pcall(function()
+                if roleCfg.passServerId ~= false then
+                    return exportRes[roleCfg.func](GetPlayerServerId(PlayerId()))
+                end
+                return exportRes[roleCfg.func]()
+            end)
 
--- ─── Huvud-NPC ───────────────────────────────────────────────────────────────
+            if ok then
+                local allowed = normalizeRouteResult(result)
+                if allowed ~= nil then
+                    debugPrint('RoleCheckExport result=%s allowed=%s', tostring(result), tostring(allowed))
+                    return allowed
+                end
+                debugPrint('RoleCheckExport returned unknown value: %s', tostring(result))
+            else
+                debugPrint('RoleCheckExport error: %s', tostring(result))
+            end
+        else
+            debugPrint('RoleCheckExport missing export: %s.%s', tostring(roleCfg.resource), tostring(roleCfg.func))
+        end
+    else
+        debugPrint('RoleCheckExport not configured')
+    end
+
+    local allowed = hasConfiguredAccess()
+    debugPrint('CriminalAccess fallback allowed=%s', tostring(allowed))
+    return allowed
+end
 
 local function setupMainNPC()
     npcEntities.main = spawnNPC(Config.NPCs.main, {
         {
-            name     = 'chop_get_contract',
-            label    = t('get_contract'),
-            icon     = 'fa-solid fa-file-contract',
+            name = 'chop_get_contract',
+            label = t('get_contract'),
+            icon = 'fa-solid fa-file-contract',
             distance = 2.5,
             canInteract = canUseCriminalOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:GetContract') end
+            onSelect = function() TriggerServerEvent('nb-chopshop:server:GetContract') end,
         },
         {
-            name     = 'chop_view_contract',
-            label    = t('view_contract'),
-            icon     = 'fa-solid fa-list-check',
+            name = 'chop_view_contract',
+            label = t('view_contract'),
+            icon = 'fa-solid fa-list-check',
             distance = 2.5,
             canInteract = canUseCriminalOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:ViewContract') end
+            onSelect = function() TriggerServerEvent('nb-chopshop:server:ViewContract') end,
         },
         {
-            name     = 'chop_turnin_contract',
-            label    = t('turn_in_contract'),
-            icon     = 'fa-solid fa-hand-holding-dollar',
+            name = 'chop_turnin_contract',
+            label = t('turn_in_contract'),
+            icon = 'fa-solid fa-hand-holding-dollar',
             distance = 2.5,
             canInteract = canUseCriminalOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:TurnInContract') end
+            onSelect = function() TriggerServerEvent('nb-chopshop:server:TurnInContract') end,
         },
-        {
-            name     = 'chop_request_vehicle',
-            label    = t('request_vehicle'),
-            icon     = 'fa-solid fa-car',
-            distance = 2.5,
-            canInteract = canUseCivilianOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:RequestCivilianVehicle') end
-        },
-        {
-            name     = 'chop_turnin_parts',
-            label    = t('turn_in_parts'),
-            icon     = 'fa-solid fa-boxes-packing',
-            distance = 2.5,
-            canInteract = canUseCivilianOptions,
-            onSelect = function() TriggerServerEvent('chopshop:server:TurnInAutoParts') end
-        }
     })
 end
-
--- ─── Blips ───────────────────────────────────────────────────────────────────
 
 local function createBlip(coords, sprite, color, scale, label)
     local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
@@ -602,173 +614,113 @@ local function createBlip(coords, sprite, color, scale, label)
 end
 
 local function createBlips()
-    local mn = Config.NPCs.main
-    if mn.blip.enabled ~= false then
-        createBlip(mn.coords, mn.blip.sprite, mn.blip.color, mn.blip.scale, t(mn.blip.labelKey))
+    local mainNpc = Config.NPCs.main
+    if mainNpc.blip.enabled ~= false then
+        createBlip(mainNpc.coords, mainNpc.blip.sprite, mainNpc.blip.color, mainNpc.blip.scale, t(mainNpc.blip.labelKey))
     end
 
-    local cz = Config.ChopZone
-    if cz.blip.enabled ~= false then
-        createBlip(cz.coords, cz.blip.sprite, cz.blip.color, cz.blip.scale, t(cz.blip.labelKey))
+    local chopZone = Config.ChopZone
+    if chopZone.blip.enabled ~= false then
+        createBlip(chopZone.coords, chopZone.blip.sprite, chopZone.blip.color, chopZone.blip.scale, t(chopZone.blip.labelKey))
     end
 end
 
--- ─── Server → klient-händelser ───────────────────────────────────────────────
+local function getContractPayload(contractData)
+    local vehicles = contractData and contractData.vehicles or {}
+    local completed = contractData and contractData.completed or {}
+    local done = 0
 
--- Visa aktiv kontraktsstatus i en alert-dialog
-RegisterNetEvent('chopshop:client:ShowContract', function(contractData)
+    local uiVehicles = {}
+    for index, vehicle in ipairs(vehicles) do
+        local isDone = completed[vehicle.model] == true
+        if isDone then done = done + 1 end
+        uiVehicles[#uiVehicles + 1] = {
+            index = index,
+            model = vehicle.model,
+            label = vehicle.label,
+            completed = isDone,
+        }
+    end
+
+    return {
+        title = t('contract_status_title'),
+        subtitle = t('contract_ui_subtitle'),
+        hint = t('contract_vehicles_spawned'),
+        vehicles = uiVehicles,
+        completedCount = done,
+        totalCount = #uiVehicles,
+        complete = #uiVehicles > 0 and done == #uiVehicles,
+    }
+end
+
+local function sendContractToUi(action, contractData)
+    SendNUIMessage({
+        action = action,
+        payload = getContractPayload(contractData),
+    })
+end
+
+local function openContractUi(contractData)
+    contractUiOpen = true
+    SetNuiFocus(true, true)
+    sendContractToUi('openContract', contractData)
+end
+
+local function closeContractUi()
+    contractUiOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'closeContract' })
+end
+
+RegisterNetEvent('nb-chopshop:client:ShowContract', function(contractData)
     if not contractData or not contractData.vehicles then
         notify(t('no_active_contract'), 'error')
         return
     end
+
     activeContractData.vehicles = contractData.vehicles
     activeContractData.completed = contractData.completed or {}
-
-    local lines = {}
-    for i, v in ipairs(contractData.vehicles) do
-        local tick = contractData.completed[v.model] and '✓' or '○'
-        lines[#lines + 1] = ('%s %d. %s'):format(tick, i, v.label)
-    end
-    lib.alertDialog({
-        header   = t('contract_status_title'),
-        content  = table.concat(lines, '\n'),
-        centered = true,
-        cancel   = true
-    })
+    openContractUi(contractData)
 end)
 
--- Kontraktsfordon spawnas inte – de kör redan runt i staden.
--- Informera spelaren att hitta kontraktsfordonen ute på gatorna.
-RegisterNetEvent('chopshop:client:SpawnContractVehicles', function(contractData)
+RegisterNetEvent('nb-chopshop:client:SetContractVehicles', function(contractData)
     if contractData and contractData.vehicles then
         activeContractData.vehicles = contractData.vehicles
-        activeContractData.completed = activeContractData.completed or {}
+        activeContractData.completed = contractData.completed or activeContractData.completed or {}
+        if contractUiOpen then sendContractToUi('updateContract', contractData) end
     end
-    notify(t('contract_vehicles_spawned'), 'inform')
 end)
 
--- Spawna civilt fordon nära NPC:n
-RegisterNetEvent('chopshop:client:SpawnCivilianVehicle', function(vehicleData)
-    local sp    = Config.CivilianVehicleSpawn
-    local model = vehicleData.model
-
-    if not loadModel(model) then
-        notify(t('vehicle_spawn_failed'), 'error')
-        return
-    end
-
-    local veh = CreateVehicle(model, sp.x, sp.y, sp.z, sp.w, true, false)
-    SetVehicleOnGroundProperly(veh)
-    SetEntityAsMissionEntity(veh, true, true)
-    SetModelAsNoLongerNeeded(model)
-
-    -- Spawna en towtruck2 i närheten för upphämtning.
-    local towModel = 'towtruck2'
-    local towSp    = Config.CivilianTowTruckSpawn or vec4(sp.x + 8.0, sp.y + 5.0, sp.z, sp.w)
-    if loadModel(towModel) then
-        local tow = CreateVehicle(towModel, towSp.x, towSp.y, towSp.z, towSp.w, true, false)
-        if tow and DoesEntityExist(tow) then
-            SetVehicleOnGroundProperly(tow)
-            SetEntityAsMissionEntity(tow, true, true)
-            SetVehicleDoorsLocked(tow, 1)
-            SetVehicleDoorsLockedForAllPlayers(tow, false)
-            SetVehicleNeedsToBeHotwired(tow, false)
-            SetVehicleUndriveable(tow, false)
-
-            local towPlate = GetVehicleNumberPlateText(tow)
-            TriggerEvent('vehiclekeys:client:SetOwner', towPlate)
-            TriggerEvent('qb-vehiclekeys:client:AddKeys', towPlate)
-        end
-        SetModelAsNoLongerNeeded(towModel)
-    end
-
-    -- Se till att demonteringsfordonet är upplåst och startklart.
-    SetVehicleDoorsLocked(veh, 1)
-    SetVehicleDoorsLockedForAllPlayers(veh, false)
-    SetVehicleNeedsToBeHotwired(veh, false)
-    SetVehicleUndriveable(veh, false)
-    SetVehicleEngineOn(veh, false, true, false)
-
-    local plate = GetVehicleNumberPlateText(veh)
-    TriggerEvent('vehiclekeys:client:SetOwner', plate)
-    TriggerEvent('qb-vehiclekeys:client:AddKeys', plate)
-
-    local netId = NetworkGetNetworkIdFromEntity(veh)
-    activeCivilianVehicleNetId = netId
-    TriggerServerEvent('chopshop:server:RegisterCivilianVehicle', netId)
-
-    if civilianVehicleBlip and DoesBlipExist(civilianVehicleBlip) then
-        RemoveBlip(civilianVehicleBlip)
-    end
-    civilianVehicleBlip = AddBlipForEntity(veh)
-    SetBlipSprite(civilianVehicleBlip, 225)
-    SetBlipColour(civilianVehicleBlip, 3)     -- blå
-    SetBlipAsShortRange(civilianVehicleBlip, false)
-    BeginTextCommandSetBlipName('STRING')
-    AddTextComponentSubstringPlayerName(t('civilian_vehicle_blip'))
-    EndTextCommandSetBlipName(civilianVehicleBlip)
-
-    notify(t('civilian_vehicle_ready', vehicleData.label), 'success')
-    notify(t('towtruck_ready'), 'inform')
+RegisterNetEvent('nb-chopshop:client:ClearContract', function()
+    activeContractData = { vehicles = nil, completed = {} }
+    if contractUiOpen then closeContractUi() end
 end)
 
--- Servern bekräftar matchning av kontraktsfordon
-RegisterNetEvent('chopshop:client:ContractVehicleDetected', function(vehicleLabel)
+RegisterNetEvent('nb-chopshop:client:ContractVehicleDetected', function(vehicleLabel)
     notify(t('contract_vehicle_detected', vehicleLabel), 'success')
 end)
 
--- Generisk notifieringsrelay
-RegisterNetEvent('chopshop:client:Notify', function(message, notifyType)
+RegisterNetEvent('nb-chopshop:client:Notify', function(message, notifyType)
     notify(message, notifyType)
 end)
 
-
-CreateThread(function()
-    while true do
-        Wait(0)
-
-        local ped = PlayerPedId()
-        if not IsPedInAnyVehicle(ped, false) then
-            Wait(750)
-        else
-            local vehicle = GetVehiclePedIsIn(ped, false)
-            if vehicle == 0 or GetPedInVehicleSeat(vehicle, -1) ~= ped then
-                Wait(500)
-            else
-                local model = GetEntityModel(vehicle)
-                if model ~= GetHashKey('towtruck2') then
-                    Wait(500)
-                else
-                    local point = Config.CivilianTowTruckDespawn
-                    local pCoords = GetEntityCoords(ped)
-                    local dist = #(pCoords - vec3(point.x, point.y, point.z))
-
-                    if dist <= 12.0 then
-                        DrawMarker(1, point.x, point.y, point.z - 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.2, 2.2, 0.8, 0, 140, 255, 140, false, false, 2, false, nil, nil, false)
-                    end
-
-                    if dist <= 3.0 then
-                        BeginTextCommandDisplayHelp('STRING')
-                        AddTextComponentSubstringPlayerName(t('towtruck_despawn_prompt'))
-                        EndTextCommandDisplayHelp(0, false, true, -1)
-
-                        if IsControlJustReleased(0, 38) then -- E
-                            despawnVehicle(vehicle)
-                            notify(t('towtruck_despawned'), 'success')
-                            Wait(500)
-                        end
-                    else
-                        Wait(250)
-                    end
-                end
-            end
-        end
-    end
+RegisterNUICallback('close', function(_, cb)
+    closeContractUi()
+    cb({ ok = true })
 end)
 
--- ─── Initialisering ──────────────────────────────────────────────────────────
+RegisterNUICallback('refresh', function(_, cb)
+    TriggerServerEvent('nb-chopshop:server:ViewContract')
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('turnIn', function(_, cb)
+    TriggerServerEvent('nb-chopshop:server:TurnInContract')
+    cb({ ok = true })
+end)
 
 CreateThread(function()
+    setupVehicleTargets()
     createBlips()
     setupChopZone()
     setupMainNPC()
