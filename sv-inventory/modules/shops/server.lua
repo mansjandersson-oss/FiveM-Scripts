@@ -245,12 +245,6 @@ lib.callback.register('ox_inventory:buyItem', function(source, data)
 			local price = count * fromData.price
 
 			if toData == nil or (fromItem.name == toItem?.name and fromItem.stack and table.matches(toData.metadata, metadata)) then
-				local newWeight = playerInv.weight + (fromItem.weight + (metadata?.weight or 0)) * count
-
-				if newWeight > playerInv.maxWeight then
-					return false, false, { type = 'error', description = locale('cannot_carry') }
-				end
-
 				local canAfford = canAffordItem(playerInv, currency, price)
 
 				if canAfford ~= true then

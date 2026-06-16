@@ -22,6 +22,11 @@ shared = {
     networkdumpsters = GetConvarInt('inventory:networkdumpsters', 0) == 1
 }
 
+shared.gridcolumns = math.max(GetConvarInt('inventory:gridcolumns', 10), 1)
+shared.gridrows = math.max(GetConvarInt('inventory:gridrows', math.ceil(shared.playerslots / shared.gridcolumns)), 1)
+shared.playerslots = shared.gridcolumns * shared.gridrows
+shared.playerweight = shared.playerslots
+
 shared.dropslots = GetConvarInt('inventory:dropslots', shared.playerslots)
 shared.dropweight = GetConvarInt('inventory:dropweight', shared.playerweight)
 
@@ -65,7 +70,11 @@ if IsDuplicityVersion() then
 				["money", 1, 10],
 				["burger", 1, 1]
 			]
-		]])),
+        ]])),
+        walletslots = math.max(GetConvarInt('inventory:walletslots', 2), 0),
+        keyringslots = math.max(GetConvarInt('inventory:keyringslots', 2), 0),
+        walletitems = json.decode(GetConvar('inventory:walletitems', '["money","black_money","card_id","card_bank"]')),
+        keyringitems = json.decode(GetConvar('inventory:keyringitems', '["key","carkey","oldkey"]')),
     }
 
     local accounts = json.decode(GetConvar('inventory:accounts', '["money"]'))

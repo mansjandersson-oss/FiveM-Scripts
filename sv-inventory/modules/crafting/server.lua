@@ -121,24 +121,6 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 			local craftedItem = Items(recipe.name)
 			local craftCount = (type(recipe.count) == 'number' and recipe.count) or (table.type(recipe.count) == 'array' and math.random(recipe.count[1], recipe.count[2])) or 1
 
-			-- Modified weight calculation
-			local newWeight = left.weight
-			local items = Inventory.Search(left, 'slots', tbl) or {}
-			---@todo new iterator or something to accept a map
-			-- First subtract weight of ingredients that will be removed
-			for name, needs in pairs(recipe.ingredients) do
-				if needs > 0 then
-					local item = Items(name)
-					if item then
-						newWeight -= (item.weight * needs)
-					end
-				end
-			end
-
-			-- Add weight of crafted item
-			newWeight += (craftedItem.weight + (recipe.metadata?.weight or 0)) * craftCount
-
-			if newWeight > left.maxWeight then return false, 'cannot_carry' end
 
 			local items = Inventory.Search(left, 'slots', tbl) or {}
 			table.wipe(tbl)
